@@ -22,7 +22,7 @@ jobs:
         curl -LO https://github.com/YOU54F/hello_cli/releases/download/v0.0.0/pact_cli_x86_64-linux-musl
         chmod +x pact_cli_x86_64-linux-musl
         mv pact_cli_x86_64-linux-musl pact_cli
-        ./pact_cli --ehelp
+        ./pact_cli --help
         ./pact_cli pact-broker --help
         ./pact_cli pactflow --help
         ./pact_cli completions --help
