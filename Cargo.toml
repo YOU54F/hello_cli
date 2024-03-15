@@ -87,6 +87,14 @@ opt-level = "z"   # Optimize for size.
 codegen-units = 1
 panic = "abort"
 lto = true
+#  File  .text   Size Crate
+# 68.0% 100.3% 5.5MiB [Unknown]
+# 67.8% 100.0% 5.5MiB .text section size, the file size is 8.1MiB
+
+# # lto = false
+#  File  .text   Size Crate
+# 59.8% 100.1% 6.5MiB [Unknown]
+# 59.8% 100.0% 6.5MiB .text section size, the file size is 10.9MiB
 
 [profile.release-aarch64-freebsd]
 inherits = "release"

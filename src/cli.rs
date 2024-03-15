@@ -35,6 +35,7 @@ pub fn build_cli() -> Command {
         )
         .subcommand(Command::new("pactflow").subcommand(add_publish_provider_contract_subcommand()))
         .subcommand(add_completions_subcommand())
+        .subcommand(add_docker_broker_subcommand())
         .subcommand(add_plugin_cli_subcommand().arg_required_else_help(true))
         .subcommand(pact_mock_server_cli::main::setup_args())
         .subcommand(pact_stub_server_cli::main::build_args())
@@ -61,6 +62,17 @@ fn add_completions_subcommand() -> Command {
         .num_args(1)
         .value_parser(clap::builder::NonEmptyStringValueParser::new())
         .help("The directory to write the shell completions to, default is the current directory"))
+}
+fn add_docker_broker_subcommand() -> Command {
+    Command::new("docker") 
+    .about("Run the Pact Broker as a Docker container")
+    .subcommand(Command::new("start")
+    .about("Start the Pact Broker as a Docker container"))
+    .subcommand(Command::new("stop")
+    .about("Stop the Pact Broker Docker container"))
+    .subcommand(Command::new("remove")
+    .about("Remove the Pact Broker Docker container"))
+
 }
 
 fn add_plugin_cli_subcommand() -> Command {
@@ -298,17 +310,19 @@ fn add_broker_auth_arguments() -> Vec<Arg> {
             .env("PACT_BROKER_TOKEN"),
     ]
 }
-fn add_output_arguments() -> Vec<Arg> {
+fn add_output_arguments(value_parser_args: Vec<&'static str>, default_value: &'static str) -> Vec<Arg> {    
     vec![
         Arg::new("output")
         .short('o')
         .long("output")
         .value_name("OUTPUT")
-        .value_parser(clap::builder::PossibleValuesParser::new(&["json", "text"]))
-        .default_value("text")
-        .help("json or text")
+        .value_parser(clap::builder::PossibleValuesParser::new(&value_parser_args))
+        .default_value(default_value) // Fix: Remove the borrow operator
+        .value_name("OUTPUT")
+        .help(format!("Value must be one of {:?}", value_parser_args))
     ]
 }
+
 fn add_verbose_arguments() -> Vec<Arg> {
     vec![
         Arg::new("verbose")
@@ -360,7 +374,7 @@ fn add_publish_pacts_subcommand() -> Command {
         .long("merge")
         .num_args(0)
         .help("If a pact already exists for this consumer version and provider, merge the contents. Useful when running Pact tests concurrently on different build nodes."))
-        .args(add_output_arguments())
+        .args(add_output_arguments(["json", "text"].to_vec(),"text"))
 .args(add_verbose_arguments())
 }
 
@@ -369,8 +383,7 @@ fn add_list_latest_pact_versions_subcommand() -> Command {
         .about("List the latest pact for each integration")
         .args(add_broker_auth_arguments())
         .args(add_verbose_arguments())
-
-        .args(add_output_arguments())
+        .args(add_output_arguments(["json", "table"].to_vec(),"table"))
 }
 fn add_create_environment_subcommand() -> Command {
     Command::new("create-environment")
@@ -395,7 +408,7 @@ fn add_create_environment_subcommand() -> Command {
         .long("contact-email-address")
         .value_name("CONTACT_EMAIL_ADDRESS")
         .help("The email address of the team/person responsible for this environment"))
-        .args(add_output_arguments())
+        .args(add_output_arguments(["json", "text"].to_vec(),"text"))
 
 .args(add_broker_auth_arguments())
 .args(add_verbose_arguments())
@@ -428,7 +441,7 @@ fn add_update_environment_subcommand() -> Command {
         .long("contact-email-address")
         .value_name("CONTACT_EMAIL_ADDRESS")
         .help("The email address of the team/person responsible for this environment"))
-        .args(add_output_arguments())
+        .args(add_output_arguments(["json", "text"].to_vec(), "text"))
 .args(add_broker_auth_arguments())
 .args(add_verbose_arguments())
 }
@@ -442,7 +455,7 @@ fn add_delete_environment_subcommand() -> Command {
                 .required(true)
                 .help("The UUID of the environment to delete"),
         )
-        .args(add_output_arguments())
+        .args(add_output_arguments(["json", "text"].to_vec(), "text"))
         .args(add_broker_auth_arguments())
 .args(add_verbose_arguments())
 }
@@ -456,14 +469,14 @@ fn add_describe_environment_subcommand() -> Command {
                 .required(true)
                 .help("The UUID of the environment to describe"),
         )
-        .args(add_output_arguments())
+        .args(add_output_arguments(["json", "text"].to_vec(), "text"))
         .args(add_broker_auth_arguments())
 .args(add_verbose_arguments())
 }
 fn add_list_environments_subcommand() -> Command {
     Command::new("list-environments")
         .about("List environments")
-        .args(add_output_arguments())
+        .args(add_output_arguments(["json", "text"].to_vec(), "text"))
         .args(add_broker_auth_arguments())
 .args(add_verbose_arguments())
 }
@@ -547,7 +560,7 @@ fn add_record_release_subcommand() -> Command {
                 .required(true)
                 .help("The name of the environment that the pacticipant version was released to."),
         )
-        .args(add_output_arguments())
+        .args(add_output_arguments(["json", "text"].to_vec(), "text"))
         .args(add_broker_auth_arguments())
 .args(add_verbose_arguments())
 }
@@ -577,7 +590,7 @@ fn add_record_support_ended_subcommand() -> Command {
                 .required(true)
                 .help("The name of the environment in which the support is ended."),
         )
-        .args(add_output_arguments())
+        .args(add_output_arguments(["json", "text"].to_vec(), "text"))
         .args(add_broker_auth_arguments())
 .args(add_verbose_arguments())
 }
@@ -621,7 +634,7 @@ fn add_can_i_deploy_subcommand() -> Command {
         .long("to")
         .value_name("TAG")
         .help("The tag that represents the branch or environment of the integrated applications for which you want to check the verification result status."))
-        .args(add_output_arguments())
+        .args(add_output_arguments(["json", "table"].to_vec(), "table"))
     .arg(Arg::new("retry-while-unknown")
         .long("retry-while-unknown")
         .value_name("TIMES")
@@ -653,7 +666,7 @@ fn add_can_i_merge_subcommand() -> Command {
         .long("version")
         .value_name("VERSION")
         .help("The pacticipant version. Must be entered after the --pacticipant that it relates to."))
-        .args(add_output_arguments())
+        .args(add_output_arguments(["json", "table"].to_vec(), "table"))
     .arg(Arg::new("retry-while-unknown")
         .long("retry-while-unknown")
         .value_name("TIMES")
@@ -699,7 +712,7 @@ fn add_create_or_update_pacticipant_subcommand() -> Command {
                 .value_name("REPOSITORY_URL")
                 .help("The repository URL of the pacticipant"),
         )
-        .args(add_output_arguments())
+        .args(add_output_arguments(["json", "text"].to_vec(), "text"))
 .args(add_verbose_arguments())
 }
 fn add_describe_pacticipant_subcommand() -> Command {
@@ -713,14 +726,14 @@ fn add_describe_pacticipant_subcommand() -> Command {
                 .required(true)
                 .help("Pacticipant name"),
         )
-        .args(add_output_arguments())
+        .args(add_output_arguments(["json", "text"].to_vec(), "text"))
 .args(add_verbose_arguments())
 }
 fn add_list_pacticipants_subcommand() -> Command {
     Command::new("list-pacticipants")
         .about("List pacticipants")
         .args(add_broker_auth_arguments())
-        .args(add_output_arguments())
+        .args(add_output_arguments(["json", "text"].to_vec(), "text"))
 .args(add_verbose_arguments())
 }
 fn add_create_webhook_subcommand() -> Command {
@@ -964,7 +977,7 @@ fn add_describe_version_subcommand() -> Command {
         .long("latest")
         .value_name("TAG")
         .help("Describe the latest pacticipant version. Optionally specify a TAG to describe the latest version with the specified tag"))
-        .args(add_output_arguments())
+        .args(add_output_arguments(["json", "table", "id"].to_vec(), "table"))
 }
 fn add_create_or_update_version_subcommand() -> Command {
     Command::new("create-or-update-version")
@@ -999,7 +1012,7 @@ fn add_create_or_update_version_subcommand() -> Command {
                 .num_args(0..=1)
                 .help("Tag name for pacticipant version. Can be specified multiple times"),
         )
-        .args(add_output_arguments())
+        .args(add_output_arguments(["json", "text"].to_vec(), "text"))
 }
 fn add_generate_uuid_subcommand() -> Command {
     Command::new("generate-uuid")
@@ -1076,6 +1089,6 @@ fn add_publish_provider_contract_subcommand() -> Command {
         .long("build-url")
         .value_name("BUILD_URL")
         .help("The build URL that created the provider contract"))
-.args(add_output_arguments())
+        .args(add_output_arguments(["json", "text"].to_vec(), "text"))
 .args(add_verbose_arguments())
 }

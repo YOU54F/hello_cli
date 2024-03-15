@@ -64,7 +64,7 @@ Options:
       --merge
           If a pact already exists for this consumer version and provider, merge the contents. Useful when running Pact tests concurrently on different build nodes.
   -o, --output <OUTPUT>
-          json or text [default: text] [possible values: json, text]
+          Value must be one of ["json", "text"] [default: text] [possible values: json, text]
   -v, --verbose
           Verbose output.
   -h, --help
@@ -94,7 +94,7 @@ Options:
   -v, --verbose
           Verbose output.
   -o, --output <OUTPUT>
-          json or text [default: text] [possible values: json, text]
+          Value must be one of ["json", "table"] [default: table] [possible values: json, table]
   -h, --help
           Print help
 
@@ -124,7 +124,7 @@ Options:
       --contact-email-address <CONTACT_EMAIL_ADDRESS>
           The email address of the team/person responsible for this environment
   -o, --output <OUTPUT>
-          json or text [default: text] [possible values: json, text]
+          Value must be one of ["json", "text"] [default: text] [possible values: json, text]
   -b, --broker-base-url <PACT_BROKER_BASE_URL>
           The base URL of the Pact Broker [env: PACT_BROKER_BASE_URL=]
   -u, --broker-username <PACT_BROKER_USERNAME>
@@ -164,7 +164,7 @@ Options:
       --contact-email-address <CONTACT_EMAIL_ADDRESS>
           The email address of the team/person responsible for this environment
   -o, --output <OUTPUT>
-          json or text [default: text] [possible values: json, text]
+          Value must be one of ["json", "text"] [default: text] [possible values: json, text]
   -b, --broker-base-url <PACT_BROKER_BASE_URL>
           The base URL of the Pact Broker [env: PACT_BROKER_BASE_URL=]
   -u, --broker-username <PACT_BROKER_USERNAME>
@@ -194,7 +194,7 @@ Options:
       --uuid <UUID>
           The UUID of the environment to describe
   -o, --output <OUTPUT>
-          json or text [default: text] [possible values: json, text]
+          Value must be one of ["json", "text"] [default: text] [possible values: json, text]
   -b, --broker-base-url <PACT_BROKER_BASE_URL>
           The base URL of the Pact Broker [env: PACT_BROKER_BASE_URL=]
   -u, --broker-username <PACT_BROKER_USERNAME>
@@ -224,7 +224,7 @@ Options:
       --uuid <UUID>
           The UUID of the environment to delete
   -o, --output <OUTPUT>
-          json or text [default: text] [possible values: json, text]
+          Value must be one of ["json", "text"] [default: text] [possible values: json, text]
   -b, --broker-base-url <PACT_BROKER_BASE_URL>
           The base URL of the Pact Broker [env: PACT_BROKER_BASE_URL=]
   -u, --broker-username <PACT_BROKER_USERNAME>
@@ -252,7 +252,7 @@ Usage: pact_cli pact-broker list-environments [OPTIONS] --broker-base-url <PACT_
 
 Options:
   -o, --output <OUTPUT>
-          json or text [default: text] [possible values: json, text]
+          Value must be one of ["json", "text"] [default: text] [possible values: json, text]
   -b, --broker-base-url <PACT_BROKER_BASE_URL>
           The base URL of the Pact Broker [env: PACT_BROKER_BASE_URL=]
   -u, --broker-username <PACT_BROKER_USERNAME>
@@ -361,7 +361,7 @@ Options:
       --environment <ENVIRONMENT>
           The name of the environment that the pacticipant version was released to.
   -o, --output <OUTPUT>
-          json or text [default: text] [possible values: json, text]
+          Value must be one of ["json", "text"] [default: text] [possible values: json, text]
   -b, --broker-base-url <PACT_BROKER_BASE_URL>
           The base URL of the Pact Broker [env: PACT_BROKER_BASE_URL=]
   -u, --broker-username <PACT_BROKER_USERNAME>
@@ -395,7 +395,7 @@ Options:
       --environment <ENVIRONMENT>
           The name of the environment in which the support is ended.
   -o, --output <OUTPUT>
-          json or text [default: text] [possible values: json, text]
+          Value must be one of ["json", "text"] [default: text] [possible values: json, text]
   -b, --broker-base-url <PACT_BROKER_BASE_URL>
           The base URL of the Pact Broker [env: PACT_BROKER_BASE_URL=]
   -u, --broker-username <PACT_BROKER_USERNAME>
@@ -441,7 +441,7 @@ Options:
       --to <TAG>
           The tag that represents the branch or environment of the integrated applications for which you want to check the verification result status.
   -o, --output <OUTPUT>
-          json or text [default: text] [possible values: json, text]
+          Value must be one of ["json", "table"] [default: table] [possible values: json, table]
       --retry-while-unknown <TIMES>
           The number of times to retry while there is an unknown verification result (ie. the provider verification is likely still running)
       --retry-interval <SECONDS>
@@ -525,7 +525,7 @@ Options:
   -e, --version <VERSION>
           The pacticipant version. Must be entered after the --pacticipant that it relates to.
   -o, --output <OUTPUT>
-          json or text [default: text] [possible values: json, text]
+          Value must be one of ["json", "table"] [default: table] [possible values: json, table]
       --retry-while-unknown <TIMES>
           The number of times to retry while there is an unknown verification result (ie. the provider verification is likely still running) [default: 0]
       --retry-interval <SECONDS>
@@ -570,7 +570,7 @@ Options:
       --repository-url <REPOSITORY_URL>
           The repository URL of the pacticipant
   -o, --output <OUTPUT>
-          json or text [default: text] [possible values: json, text]
+          Value must be one of ["json", "text"] [default: text] [possible values: json, text]
   -v, --verbose
           Verbose output.
   -h, --help
@@ -600,7 +600,7 @@ Options:
       --name <NAME>
           Pacticipant name
   -o, --output <OUTPUT>
-          json or text [default: text] [possible values: json, text]
+          Value must be one of ["json", "text"] [default: text] [possible values: json, text]
   -v, --verbose
           Verbose output.
   -h, --help
@@ -628,7 +628,7 @@ Options:
   -k, --broker-token <PACT_BROKER_TOKEN>
           Pact Broker bearer token [env: PACT_BROKER_TOKEN=]
   -o, --output <OUTPUT>
-          json or text [default: text] [possible values: json, text]
+          Value must be one of ["json", "text"] [default: text] [possible values: json, text]
   -v, --verbose
           Verbose output.
   -h, --help
@@ -877,7 +877,7 @@ Options:
   -a, --pacticipant <PACTICIPANT>  The name of the pacticipant that the version belongs to
   -e, --version <VERSION>          The pacticipant version number
   -l, --latest <TAG>               Describe the latest pacticipant version. Optionally specify a TAG to describe the latest version with the specified tag
-  -o, --output <OUTPUT>            json or text [default: text] [possible values: json, text]
+  -o, --output <OUTPUT>            Value must be one of ["json", "table", "id"] [default: table] [possible values: json, table, id]
   -h, --help                       Print help
 
 ```
@@ -897,7 +897,7 @@ Options:
   -e, --version <VERSION>          The pacticipant version number
       --branch <BRANCH>            The repository branch name
   -t, --tag [<TAG>]                Tag name for pacticipant version. Can be specified multiple times
-  -o, --output <OUTPUT>            json or text [default: text] [possible values: json, text]
+  -o, --output <OUTPUT>            Value must be one of ["json", "text"] [default: text] [possible values: json, text]
   -h, --help                       Print help
 
 ```
@@ -972,7 +972,7 @@ Options:
       --build-url <BUILD_URL>
           The build URL that created the provider contract
   -o, --output <OUTPUT>
-          json or text [default: text] [possible values: json, text]
+          Value must be one of ["json", "text"] [default: text] [possible values: json, text]
   -v, --verbose
           Verbose output.
   -h, --help
@@ -994,6 +994,7 @@ Commands:
   pact-broker  
   pactflow     
   completions  Generates completion scripts for your shell
+  docker       Run the Pact Broker as a Docker container
   plugin       CLI utility for Pact plugins
   mock         Standalone Pact mock server
   stub         Pact Stub Server 0.1.0
@@ -1488,15 +1489,6 @@ Options:
 
 ```
 
-```console
-$ pact_cli stub --file foo
-? 3
-[2m2024-03-15T18:39:25.892966Z[0m [31mERROR[0m main [2mpact_cli::cli::pact_stub_server_cli::main[0m[2m:[0m There were errors loading the pact files.
-[2m2024-03-15T18:39:25.892976Z[0m [31mERROR[0m main [2mpact_cli::cli::pact_stub_server_cli::main[0m[2m:[0m   - Failed to load pact file: No such file or directory (os error 2)
-Error: ExitCode(unix_exit_status(3))
-
-```
-
 ## Pact Verifier CLI
 
 ```console
@@ -1597,17 +1589,21 @@ Pact Broker options:
 
 ```
 
+## Pact Broker Docker
+
 ```console
-$ pact_cli verifier --file foo
-? 1
-[2m2024-03-15T18:39:25.902780Z[0m [31mERROR[0m main [2mpact_verifier[0m[2m:[0m Failed to load pact - [31mFailed to load pact 'foo' - No such file or directory (os error 2)[0m
+$ pact_cli docker --help
+Run the Pact Broker as a Docker container
 
-Failures:
+Usage: pact_cli docker [COMMAND]
 
-1) Failed to load pact - Failed to load pact 'foo' - No such file or directory (os error 2)
+Commands:
+  start   Start the Pact Broker as a Docker container
+  stop    Stop the Pact Broker Docker container
+  remove  Remove the Pact Broker Docker container
+  help    Print this message or the help of the given subcommand(s)
 
-
-There were 1 pact failures
-
+Options:
+  -h, --help  Print help
 
 ```

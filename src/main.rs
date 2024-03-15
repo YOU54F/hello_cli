@@ -4,9 +4,7 @@ use clap::error::ErrorKind;
 use clap_complete::{generate_to, Shell};
 use pact_broker::{HALClient, Link, PactBrokerError};
 use serde_json::Value;
-use std::process::ExitCode;
-use std::process::ExitStatus;
-use std::process::Termination;
+use std::process::Command;
 use std::str::FromStr;
 mod pact_broker;
 mod pact_plugin_cli;
@@ -156,7 +154,6 @@ pub fn main() {
                                 // handle user args for additional processing
                                 let output: Result<Option<&String>, clap::parser::MatchesError> =
                                     args.try_get_one::<String>("output");
-
                                 // render result
                                 match output {
                                     Ok(Some(output)) => {
@@ -238,73 +235,75 @@ pub fn main() {
                             // Query strings
                             // Async runtime
 
-                            //     // Handle can-i-deploy command
-                            //     // setup client with broker ucarl and credentials
-                            //     let broker_url = get_broker_url(args);
-                            //     let auth = get_auth(args);
-                            //     // query pact broker index and get hal relation link
-                            //     let hal_client: HALClient =
-                            //         HALClient::with_url(&broker_url, Some(auth.clone()));
-                            //     let matrix_href_path = "/matrix?pacticipant=Example+App&latest=true&latestby=cvp&latest=true".to_string();
-                            //     // let matrix_href_path = "/matrix?q[][pacticipant]=Example+App&q[][latest]=true&latestby=cvp&latest=true".to_string();
-                            //     // query the hal relation link to get the latest pact versions
-                            //     let res = follow_broker_relation(
-                            //         hal_client.clone(),
-                            //         "pb:latest-pact-versions".to_string(),
-                            //         matrix_href_path,
-                            //     )
-                            //     .await;
-                            //     match res {
-                            //         Ok(res) => {
-                            //             // handle user args for additional processing
-                            //             let output: Result<Option<&String>, clap::parser::MatchesError> =
-                            //                 args.try_get_one::<String>("output");
+                            // Handle can-i-deploy command
+                            // setup client with broker ucarl and credentials
+                            let broker_url = get_broker_url(args);
+                            let auth = get_auth(args);
+                            // query pact broker index and get hal relation link
+                            tokio::runtime::Runtime::new().unwrap().block_on(async {
+                                let hal_client: HALClient =
+                                    HALClient::with_url(&broker_url, Some(auth.clone()));
+                                let matrix_href_path = "/matrix?pacticipant=Example+App&latest=true&latestby=cvp&latest=true".to_string();
+                                // let matrix_href_path = "/matrix?q[][pacticipant]=Example+App&q[][latest]=true&latestby=cvp&latest=true".to_string();
+                                // query the hal relation link to get the latest pact versions
+                                let res = follow_broker_relation(
+                                    hal_client.clone(),
+                                    "pb:latest-pact-versions".to_string(),
+                                    matrix_href_path,
+                                )
+                                .await;
+                                match res {
+                                    Ok(res) => {
+                                        // handle user args for additional processing
+                                        let output: Result<Option<&String>, clap::parser::MatchesError> =
+                                            args.try_get_one::<String>("output");
 
-                            //             // render result
-                            //             match output {
-                            //                 Ok(Some(output)) => {
-                            //                     if output == "json" {
-                            //                         let json: String =
-                            //                             serde_json::to_string(&res.clone()).unwrap();
-                            //                         println!("{}", json);
-                            //                     } else if output == "table" {
-                            //                         generate_table(
-                            //                             &res,
-                            //                             vec![
-                            //                                 "CONSUMER",
-                            //                                 "CONSUMER_VERSION",
-                            //                                 "PROVIDER",
-                            //                                 "CREATED_AT",
-                            //                             ],
-                            //                             vec![
-                            //                                 vec!["_embedded", "consumer", "name"],
-                            //                                 vec![
-                            //                                     "_embedded",
-                            //                                     "consumer",
-                            //                                     "_embedded",
-                            //                                     "version",
-                            //                                     "number",
-                            //                                 ],
-                            //                                 vec!["_embedded", "provider", "name"],
-                            //                                 vec!["createdAt"],
-                            //                             ],
-                            //                         );
-                            //                     }
-                            //                 }
-                            //                 Ok(None) => {
-                            //                     println!("{:?}", res.clone());
-                            //                 }
-                            //                 Err(res) => {
-                            //                     println!("{:?}", res);
-                            //                     // os.exit(1)
-                            //                 }
-                            //             }
-                            //         }
-                            //         Err(res) => {
-                            //             println!("{:?}", res);
-                            //             // os.exit(1)
-                            //         }
-                            //     }
+                                        // render result
+                                        match output {
+                                            Ok(Some(output)) => {
+                                                if output == "json" {
+                                                    let json: String =
+                                                        serde_json::to_string(&res.clone()).unwrap();
+                                                    println!("{}", json);
+                                                } else if output == "table" {
+                                                    generate_table(
+                                                        &res,
+                                                        vec![
+                                                            "CONSUMER",
+                                                            "CONSUMER_VERSION",
+                                                            "PROVIDER",
+                                                            "CREATED_AT",
+                                                        ],
+                                                        vec![
+                                                            vec!["_embedded", "consumer", "name"],
+                                                            vec![
+                                                                "_embedded",
+                                                                "consumer",
+                                                                "_embedded",
+                                                                "version",
+                                                                "number",
+                                                            ],
+                                                            vec!["_embedded", "provider", "name"],
+                                                            vec!["createdAt"],
+                                                        ],
+                                                    );
+                                                }
+                                            }
+                                            Ok(None) => {
+                                                println!("{:?}", res.clone());
+                                            }
+                                            Err(res) => {
+                                                println!("{:?}", res);
+                                                // os.exit(1)
+                                            }
+                                        }
+                                    }
+                                    Err(res) => {
+                                        println!("{:?}", res);
+                                        // os.exit(1)
+                                    }
+                                }
+                        })
                         }
                         Some(("can-i-merge", args)) => {
                             // Handle can-i-merge command
@@ -314,7 +313,6 @@ pub fn main() {
                             // Handle create-or-update-pacticipant command
                             // Ok(());
                         }
-
                         Some(("describe-pacticipant", args)) => {
                             // Handle describe-pacticipants command
                             // Ok(());
@@ -323,7 +321,6 @@ pub fn main() {
                             // Handle list-pacticipants command
                             // Ok(());
                         }
-
                         Some(("create-webhook", args)) => {
                             // Handle create-webhook command
                             // Ok(());
@@ -337,7 +334,6 @@ pub fn main() {
 
                             // Ok(());
                         }
-
                         Some(("delete-branch", args)) => {
                             // Handle delete-branch command
                             // Ok(());
@@ -358,10 +354,8 @@ pub fn main() {
                             // Handle generate-uuid command
                             // Ok(());
                         }
-
                         _ => {
                             println!("⚠️  No option provided, try running pact-broker --help");
-
                             // Ok(());
                         }
                     }
@@ -399,42 +393,100 @@ pub fn main() {
 
                     // Ok(());
                 }
+                Some(("docker", args)) => {
+                    match args.subcommand() {
+                        Some(("start", args)) => {
+                            let output = Command::new("docker")
+                        .arg("run")
+                        .arg("-d")
+                        .arg("--name")
+                        .arg("pact-broker")
+                        .arg("-p")
+                        .arg("9292:9292")
+                        .arg("--env")
+                        .arg("PACT_BROKER_PORT=9292")
+                        .arg("--env")
+                        .arg("PACT_BROKER_DATABASE_URL=sqlite:////tmp/pact_broker.sqlite")
+                        .arg("--env")
+                        .arg("PACT_BROKER_BASE_URL=http://localhost http://localhost http://localhost:9292 http://pact-broker:9292 https://host.docker.internal http://host.docker.internal http://host.docker.internal:9292")
+                        .arg("pactfoundation/pact-broker:latest")
+                        .output()
+                        .expect("Failed to execute Docker command");
+
+                            if output.status.success() {
+                                println!("Docker container started successfully");
+                            } else {
+                                let error_message = String::from_utf8_lossy(&output.stderr);
+                                println!("Failed to start Docker container: {}", error_message);
+                            }
+                        }
+                        Some(("stop", args)) => {
+                            let output = Command::new("docker")
+                                .arg("stop")
+                                .arg("pact-broker")
+                                .output()
+                                .expect("Failed to execute Docker command");
+
+                            if output.status.success() {
+                                println!("Docker container stopped successfully");
+                            } else {
+                                let error_message = String::from_utf8_lossy(&output.stderr);
+                                println!("Failed to stop Docker container: {}", error_message);
+                            }
+                        }
+                        Some(("remove", args)) => {
+                            let output = Command::new("docker")
+                                .arg("rm")
+                                .arg("pact-broker")
+                                .output()
+                                .expect("Failed to execute Docker command");
+
+                            if output.status.success() {
+                                println!("Docker container removed successfully");
+                            } else {
+                                let error_message = String::from_utf8_lossy(&output.stderr);
+                                println!("Failed to remove Docker container: {}", error_message);
+                            }
+                        }
+                        _ => {
+                            println!("⚠️  No option provided, try running pactflow --help");
+
+                            // Ok(());
+                        }
+                    }
+                }
                 Some(("plugin", args)) => {
                     let _ = pact_plugin_cli::main::run(args);
                 }
-                Some(("mock", args)) => {
-                    tokio::runtime::Runtime::new().unwrap().block_on(async {
-                        let res = pact_mock_server_cli::main::handle_matches(args).await;
-                        match res {
-                            Ok(_) => {
-                                std::process::exit(0);
-                            }
-                            Err(e) => {
-                                std::process::exit(e);
-                            }
-                            _ => {
-                                std::process::exit(1);
-                            }
+                Some(("mock", args)) => tokio::runtime::Runtime::new().unwrap().block_on(async {
+                    let res = pact_mock_server_cli::main::handle_matches(args).await;
+                    match res {
+                        Ok(_) => {
+                            std::process::exit(0);
                         }
-                    })
-                }
-                Some(("stub", args)) => {
-                    tokio::runtime::Runtime::new().unwrap().block_on(async {
-                        let res = pact_stub_server_cli::main::handle_matches(args).await;
-                        match res {
-                            Ok(_) => {
-                                std::process::exit(0);
-                            }
-                            Err(e) => {
-                                println!("Error: {:?}", e);
-                                std::process::exit(3);
-                            }
-                            _ => {
-                                std::process::exit(1);
-                            }
+                        Err(e) => {
+                            std::process::exit(e);
                         }
-                    })
-                }
+                        _ => {
+                            std::process::exit(1);
+                        }
+                    }
+                }),
+                Some(("stub", args)) => tokio::runtime::Runtime::new().unwrap().block_on(async {
+                    let res = pact_stub_server_cli::main::handle_matches(args).await;
+                    match res {
+                        Ok(_) => {
+                            std::process::exit(0);
+                        }
+                        Err(e) => {
+                            println!("Error: {:?}", e);
+                            std::process::exit(3);
+                        }
+                        _ => {
+                            std::process::exit(1);
+                        }
+                    }
+                }),
                 Some(("verifier", args)) => {
                     tokio::runtime::Runtime::new().unwrap().block_on(async {
                         let res = pact_verifier_cli::main::handle_matches(args).await;
@@ -473,7 +525,7 @@ pub fn main() {
                 } else if stub_server_match == error_message {
                     pact_stub_server_cli::main::print_version();
                     println!();
-                } 
+                }
             }
             _ => err.exit(),
         },
