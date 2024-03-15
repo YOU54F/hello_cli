@@ -19,7 +19,7 @@ jobs:
     - uses: actions/checkout@v3
     - name: Build
       run: |
-        curl -LO https://github.com/YOU54F/hello_cli/releases/download/v0.0.0/pact_cli_x86_64-linux-musl
+        curl -LO https://github.com/YOU54F/hello_cli/releases/download/v0.0.1/pact_cli_x86_64-linux-musl
         chmod +x pact_cli_x86_64-linux-musl
         mv pact_cli_x86_64-linux-musl pact_cli
         ./pact_cli --help
