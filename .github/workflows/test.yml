@@ -91,11 +91,11 @@ jobs:
               os: ubuntu-latest,
               use-cross: true
             }
-          # - {
-          #     target: i586-unknown-linux-gnu,
-          #     os: ubuntu-latest,
-          #     use-cross: true
-          #   }
+          - {
+              target: i586-unknown-linux-gnu,
+              os: ubuntu-latest,
+              use-cross: true
+            }
           - {
               target: i686-unknown-linux-gnu,
               os: ubuntu-latest,
@@ -106,11 +106,11 @@ jobs:
               os: ubuntu-latest,
               use-cross: true
             }
-          # - {
-          #     target: x86_64-unknown-freebsd,
-          #     os: ubuntu-latest,
-          #     use-cross: true
-          #   }
+          - {
+              target: x86_64-unknown-freebsd,
+              os: ubuntu-latest,
+              use-cross: true
+            }
           - {
               target: aarch64-unknown-freebsd,
               os: ubuntu-latest,
@@ -248,28 +248,39 @@ jobs:
         with:
           name: ${{ steps.dist.outputs.BINARY_NAME }}
           path: dist/
-
-  release:
-    name: '📦 Github release'
-    if: |
-      github.ref == 'refs/heads/main'
-    needs:
-      - build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      discussions: write
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/download-artifact@master
       - name: Publish archives and packages
         uses: softprops/action-gh-release@master
         with:
-          tag_name: 'v0.0.0'
-          name: 'Release v0.0.0'
+          tag_name: 'v0.0.1'
+          name: 'Release v0.0.1'
           generate_release_notes: false
-          body: 'Release v0.0.0'
+          body: 'Release v0.0.1'
           files: |
             */${{ env.BINARY_APP_NAME }}*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # release:
+  #   name: '📦 Github release'
+  #   if: |
+  #     github.ref == 'refs/heads/main'
+  #   needs:
+  #     - build
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: write
+  #     discussions: write
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - uses: actions/download-artifact@master
+  #     - name: Publish archives and packages
+  #       uses: softprops/action-gh-release@master
+  #       with:
+  #         tag_name: 'v0.0.0'
+  #         name: 'Release v0.0.0'
+  #         generate_release_notes: false
+  #         body: 'Release v0.0.0'
+  #         files: |
+  #           */${{ env.BINARY_APP_NAME }}*
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

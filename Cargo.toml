@@ -9,7 +9,7 @@ edition = "2021"
 ansi_term = "0.12.1"
 anyhow = "1.0.40"
 async-trait = "0.1.74"
-base64 = "0.21.1"
+base64 = "0.22.0"
 chrono = { version = "0.4.31", features = ["serde"] }
 clap = { version = "4.5.2", features = ["derive", "env", "cargo"] }
 clap_complete = { version = "4.5.1", features = [] }
@@ -30,13 +30,13 @@ pact_matching = { version = "~1.1.10" }
 pact_mock_server = { version = "~1.2.4", default-features = false }
 pact_models = { version = "~1.1.18" }
 pact-plugin-driver = { version = "~0.5.2", git = "https://github.com/you54f/pact-plugins.git" }
-pact_verifier = "~1.0.0"
+pact_verifier = "~1.1.0"
 rand = "0.8.5"
 regex = "1.10.2"
 requestty = "0.5.0"
 serde = "1.0"
 serde_json = "1.0"
-serde_yaml = "0.8.23"
+serde_yaml = "0.9.32"
 simplelog = "0.12.1"
 tabled = "0.15.0"
 thiserror = "1.0.51"
@@ -58,7 +58,7 @@ webmachine-rust = "0.3.0"
 
 
 [dependencies.reqwest]
-version = "0.11.23"
+version = "0.11.26"
 default-features = false
 features = ["rustls-tls-native-roots", "blocking", "json", "stream"]
 
@@ -71,7 +71,7 @@ features = ["json"]
 # clap_complete = "4.5.1"
 
 [dev-dependencies]
-env_logger = "0.10.1"
+env_logger = "0.11.3"
 expectest = "0.12.0"
 pretty_assertions = "1.3.0"
 quickcheck = "1"
@@ -86,6 +86,7 @@ strip = true      # Automatically strip symbols from the binary.
 opt-level = "z"   # Optimize for size.
 codegen-units = 1
 panic = "abort"
+lto = true
 
 [profile.release-aarch64-freebsd]
 inherits = "release"
