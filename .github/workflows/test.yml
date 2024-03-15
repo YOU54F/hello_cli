@@ -182,6 +182,8 @@ jobs:
               use-cross: false
             }
     runs-on: ${{matrix.job.os}}
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v3
       - name: Install Rust Toolchain Components
