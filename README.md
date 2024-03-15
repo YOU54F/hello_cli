@@ -998,6 +998,9 @@ Commands:
   pactflow     
   completions  Generates completion scripts for your shell
   plugin       CLI utility for Pact plugins
+  mock         Standalone Pact mock server
+  stub         Pact Stub Server 0.1.0
+  verifier     
   help         Print this message or the help of the given subcommand(s)
 
 Options:
@@ -1039,8 +1042,8 @@ List known plugins
 Usage: pact_cli plugin list known [OPTIONS]
 
 Options:
-  -a, --show-all-versions <show_all_versions>  Display all versions of the known plugins
-  -h, --help                                   Print help
+  -a, --show-all-versions  Display all versions of the known plugins
+  -h, --help               Print help
 
 ```
 

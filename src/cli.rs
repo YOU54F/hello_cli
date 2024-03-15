@@ -1,4 +1,7 @@
 use clap::{Arg, Command};
+mod pact_verifier_cli;
+mod pact_mock_server_cli;
+mod pact_stub_server_cli;
 
 pub fn build_cli() -> Command {
     let app = Command::new("pact_cli")
@@ -32,7 +35,10 @@ pub fn build_cli() -> Command {
         )
         .subcommand(Command::new("pactflow").subcommand(add_publish_provider_contract_subcommand()))
         .subcommand(add_completions_subcommand())
-        .subcommand(add_plugin_cli_subcommand());
+        .subcommand(add_plugin_cli_subcommand())
+        .subcommand(pact_mock_server_cli::main::setup_args())
+        .subcommand(pact_stub_server_cli::main::build_args())
+        .subcommand(pact_verifier_cli::main::build_args());
     // Continue adding other subcommands as needed
     // ...
     app
