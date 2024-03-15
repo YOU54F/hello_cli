@@ -5,6 +5,7 @@ use pact_broker::{HALClient, Link, PactBrokerError};
 use serde_json::Value;
 use std::str::FromStr;
 mod pact_broker;
+mod pact_plugin_cli;
 use maplit::hashmap;
 use pact_models::http_utils::HttpAuth;
 use tabled::{builder::Builder, settings::Style};
@@ -107,10 +108,8 @@ fn generate_table(res: &Value, columns: Vec<&str>, names: Vec<Vec<&str>>) {
     println!("{:#}", table);
 }
 
-#[tokio::main]
-pub async fn main() {
+pub fn main() {
     let _m = cli::build_cli().get_matches();
-
     match _m.subcommand() {
         Some(("pact-broker", args)) => {
             match args.subcommand() {
@@ -124,64 +123,66 @@ pub async fn main() {
                     // setup client with broker url and credentials
                     let broker_url = get_broker_url(args);
                     let auth = get_auth(args);
-                    // query pact broker index and get hal relation link
-                    let hal_client: HALClient =
-                        HALClient::with_url(&broker_url, Some(auth.clone()));
-                    let pb_latest_pact_versions_href_path = get_broker_relation(
-                        hal_client.clone(),
-                        "pb:latest-pact-versions".to_string(),
-                        broker_url,
-                    )
-                    .await;
-                    // query the hal relation link to get the latest pact versions
-                    let res = follow_broker_relation(
-                        hal_client.clone(),
-                        "pb:latest-pact-versions".to_string(),
-                        pb_latest_pact_versions_href_path,
-                    )
-                    .await;
+                    tokio::runtime::Runtime::new().unwrap().block_on(async {
+                        // query pact broker index and get hal relation link
+                        let hal_client: HALClient =
+                            HALClient::with_url(&broker_url, Some(auth.clone()));
+                            let pb_latest_pact_versions_href_path = get_broker_relation(
+                                hal_client.clone(),
+                                "pb:latest-pact-versions".to_string(),
+                                broker_url,
+                            ).await;;
+                        // query the hal relation link to get the latest pact versions
+                        let res = follow_broker_relation(
+                            hal_client.clone(),
+                            "pb:latest-pact-versions".to_string(),
+                            pb_latest_pact_versions_href_path,
+                        )
+                        .await;
 
-                    // handle user args for additional processing
-                    let output: Result<Option<&String>, clap::parser::MatchesError> =
-                        args.try_get_one::<String>("output");
+                        // handle user args for additional processing
+                        let output: Result<Option<&String>, clap::parser::MatchesError> =
+                            args.try_get_one::<String>("output");
 
-                    // render result
-                    match output {
-                        Ok(Some(output)) => {
-                            if output == "json" {
-                                let json: String = serde_json::to_string(&res.unwrap()).unwrap();
-                                println!("{}", json);
-                            } else if output == "table" {
-                                if let Ok(res) = res {
-                                    generate_table(
-                                        &res,
-                                        vec![
-                                            "CONSUMER",
-                                            "CONSUMER_VERSION",
-                                            "PROVIDER",
-                                            "CREATED_AT",
-                                        ],
-                                        vec![
-                                            vec!["_embedded", "consumer", "name"],
+                        // render result
+                        match output {
+                            Ok(Some(output)) => {
+                                if output == "json" {
+                                    let json: String =
+                                        serde_json::to_string(&res.unwrap()).unwrap();
+                                    println!("{}", json);
+                                } else if output == "table" {
+                                    if let Ok(res) = res {
+                                        generate_table(
+                                            &res,
                                             vec![
-                                                "_embedded",
-                                                "consumer",
-                                                "_embedded",
-                                                "version",
-                                                "number",
+                                                "CONSUMER",
+                                                "CONSUMER_VERSION",
+                                                "PROVIDER",
+                                                "CREATED_AT",
                                             ],
-                                            vec!["_embedded", "provider", "name"],
-                                            vec!["createdAt"],
-                                        ],
-                                    );
+                                            vec![
+                                                vec!["_embedded", "consumer", "name"],
+                                                vec![
+                                                    "_embedded",
+                                                    "consumer",
+                                                    "_embedded",
+                                                    "version",
+                                                    "number",
+                                                ],
+                                                vec!["_embedded", "provider", "name"],
+                                                vec!["createdAt"],
+                                            ],
+                                        );
+                                    }
                                 }
                             }
+                            Ok(None) => {
+                                println!("{:?}", res.clone());
+                            }
+                            Err(_) => todo!(),
                         }
-                        Ok(None) => {
-                            println!("{:?}", res.clone());
-                        }
-                        Err(_) => todo!(),
-                    }
+                    });
                 }
                 Some(("create-environment", args)) => {
                     // Handle create-environment command
@@ -220,73 +221,77 @@ pub async fn main() {
                     // Ok(());
                 }
                 Some(("can-i-deploy", args)) => {
-                    // Handle can-i-deploy command
-                    // setup client with broker url and credentials
-                    let broker_url = get_broker_url(args);
-                    let auth = get_auth(args);
-                    // query pact broker index and get hal relation link
-                    let hal_client: HALClient =
-                        HALClient::with_url(&broker_url, Some(auth.clone()));
-                    let matrix_href_path = "/matrix?pacticipant=Example+App&latest=true&latestby=cvp&latest=true".to_string();
-                    // let matrix_href_path = "/matrix?q[][pacticipant]=Example+App&q[][latest]=true&latestby=cvp&latest=true".to_string();
-                    // query the hal relation link to get the latest pact versions
-                    let res = follow_broker_relation(
-                        hal_client.clone(),
-                        "pb:latest-pact-versions".to_string(),
-                        matrix_href_path,
-                    )
-                    .await;
-                    match res {
-                        Ok(res) => {
-                            // handle user args for additional processing
-                            let output: Result<Option<&String>, clap::parser::MatchesError> =
-                                args.try_get_one::<String>("output");
+                // TODO
+                // Query strings
+                // Async runtime
 
-                            // render result
-                            match output {
-                                Ok(Some(output)) => {
-                                    if output == "json" {
-                                        let json: String =
-                                            serde_json::to_string(&res.clone()).unwrap();
-                                        println!("{}", json);
-                                    } else if output == "table" {
-                                        generate_table(
-                                            &res,
-                                            vec![
-                                                "CONSUMER",
-                                                "CONSUMER_VERSION",
-                                                "PROVIDER",
-                                                "CREATED_AT",
-                                            ],
-                                            vec![
-                                                vec!["_embedded", "consumer", "name"],
-                                                vec![
-                                                    "_embedded",
-                                                    "consumer",
-                                                    "_embedded",
-                                                    "version",
-                                                    "number",
-                                                ],
-                                                vec!["_embedded", "provider", "name"],
-                                                vec!["createdAt"],
-                                            ],
-                                        );
-                                    }
-                                }
-                                Ok(None) => {
-                                    println!("{:?}", res.clone());
-                                }
-                                Err(res) => {
-                                    println!("{:?}", res);
-                                    // os.exit(1)
-                                }
-                            }
-                        }
-                        Err(res) => {
-                            println!("{:?}", res);
-                            // os.exit(1)
-                        }
-                    }
+                //     // Handle can-i-deploy command
+                //     // setup client with broker ucarl and credentials
+                //     let broker_url = get_broker_url(args);
+                //     let auth = get_auth(args);
+                //     // query pact broker index and get hal relation link
+                //     let hal_client: HALClient =
+                //         HALClient::with_url(&broker_url, Some(auth.clone()));
+                //     let matrix_href_path = "/matrix?pacticipant=Example+App&latest=true&latestby=cvp&latest=true".to_string();
+                //     // let matrix_href_path = "/matrix?q[][pacticipant]=Example+App&q[][latest]=true&latestby=cvp&latest=true".to_string();
+                //     // query the hal relation link to get the latest pact versions
+                //     let res = follow_broker_relation(
+                //         hal_client.clone(),
+                //         "pb:latest-pact-versions".to_string(),
+                //         matrix_href_path,
+                //     )
+                //     .await;
+                //     match res {
+                //         Ok(res) => {
+                //             // handle user args for additional processing
+                //             let output: Result<Option<&String>, clap::parser::MatchesError> =
+                //                 args.try_get_one::<String>("output");
+
+                //             // render result
+                //             match output {
+                //                 Ok(Some(output)) => {
+                //                     if output == "json" {
+                //                         let json: String =
+                //                             serde_json::to_string(&res.clone()).unwrap();
+                //                         println!("{}", json);
+                //                     } else if output == "table" {
+                //                         generate_table(
+                //                             &res,
+                //                             vec![
+                //                                 "CONSUMER",
+                //                                 "CONSUMER_VERSION",
+                //                                 "PROVIDER",
+                //                                 "CREATED_AT",
+                //                             ],
+                //                             vec![
+                //                                 vec!["_embedded", "consumer", "name"],
+                //                                 vec![
+                //                                     "_embedded",
+                //                                     "consumer",
+                //                                     "_embedded",
+                //                                     "version",
+                //                                     "number",
+                //                                 ],
+                //                                 vec!["_embedded", "provider", "name"],
+                //                                 vec!["createdAt"],
+                //                             ],
+                //                         );
+                //                     }
+                //                 }
+                //                 Ok(None) => {
+                //                     println!("{:?}", res.clone());
+                //                 }
+                //                 Err(res) => {
+                //                     println!("{:?}", res);
+                //                     // os.exit(1)
+                //                 }
+                //             }
+                //         }
+                //         Err(res) => {
+                //             println!("{:?}", res);
+                //             // os.exit(1)
+                //         }
+                //     }
                 }
                 Some(("can-i-merge", args)) => {
                     // Handle can-i-merge command
@@ -380,6 +385,9 @@ pub async fn main() {
             );
 
             // Ok(());
+        }
+        Some(("plugin", args)) => {
+            let _ = pact_plugin_cli::main::run(args);
         }
         _ => {
             cli::build_cli().print_help().unwrap();

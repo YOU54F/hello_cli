@@ -32,7 +32,7 @@ pub fn build_cli() -> Command {
         )
         .subcommand(Command::new("pactflow").subcommand(add_publish_provider_contract_subcommand()))
         .subcommand(add_completions_subcommand())
-    .subcommand(add_plugin_cli_subcommand());
+        .subcommand(add_plugin_cli_subcommand());
     // Continue adding other subcommands as needed
     // ...
     app
@@ -63,14 +63,20 @@ fn add_plugin_cli_subcommand() -> Command {
     .arg(Arg::new("yes")
         .short('y')
         .long("yes")
+        .num_args(0)
+        .action(clap::ArgAction::SetFalse)
         .help("Automatically answer Yes for all prompts"))
     .arg(Arg::new("debug")
         .short('d')
         .long("debug")
+        .num_args(0)
+        .action(clap::ArgAction::SetFalse)
         .help("Enable debug level logs"))
     .arg(Arg::new("trace")
         .short('t')
         .long("trace")
+        .num_args(0)
+        .action(clap::ArgAction::SetFalse)
         .help("Enable trace level logs"))
     .arg(Arg::new("cli_version")
         .short('v')
@@ -79,6 +85,7 @@ fn add_plugin_cli_subcommand() -> Command {
         .num_args(0))
     .subcommand(Command::new("list")
         .about("List the installed plugins")
+        .arg_required_else_help(true)
     .subcommand(Command::new("installed")
         .about("List installed plugins"))
     .subcommand(Command::new("known")
@@ -86,7 +93,9 @@ fn add_plugin_cli_subcommand() -> Command {
         .arg(Arg::new("show_all_versions")
             .short('a')
             .long("show-all-versions")
-            .help("Display all versions of the known plugins"))
+            .help("Display all versions of the known plugins")
+            .action(clap::ArgAction::SetFalse)
+        )
         
         ))
 

@@ -5,21 +5,24 @@ use std::io::BufReader;
 use std::path::PathBuf;
 
 use anyhow::anyhow;
+use clap::ArgMatches;
 use comfy_table::presets::UTF8_FULL;
 use comfy_table::Table;
 use itertools::Itertools;
 use tracing::trace;
-
+// use main;
 use pact_plugin_driver::plugin_models::PactPluginManifest;
 use pact_plugin_driver::repository::fetch_repository_index;
 
-use crate::{ListCommands, resolve_plugin_dir};
-use crate::repository::{APP_USER_AGENT, DEFAULT_INDEX};
+use super::resolve_plugin_dir;
+use super::repository::{APP_USER_AGENT, DEFAULT_INDEX};
 
-pub fn list_plugins(command: &ListCommands) -> anyhow::Result<()> {
-  match command {
-    ListCommands::Installed => list_installed_plugins(),
-    ListCommands::Known { show_all_versions } => list_known_plugins(show_all_versions)
+pub fn list_plugins(command: &ArgMatches) -> anyhow::Result<()> {
+  match command.subcommand() {
+    Some(("installed", _)) => list_installed_plugins(),
+    Some(("known", args)) => list_known_plugins(args.get_one::<bool>("show_all_versions").unwrap()),
+    Some((&_, _)) => Err(anyhow!("unrecognized subcommand is shown")),
+    None => Err(anyhow!("help is shown by default")), 
   }
 }
 

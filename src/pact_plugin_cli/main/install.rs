@@ -15,8 +15,8 @@ use url::Url;
 use pact_plugin_driver::download::{download_json_from_github, download_plugin_executable};
 use pact_plugin_driver::repository::fetch_repository_index;
 
-use crate::{find_plugin, resolve_plugin_dir};
-use crate::repository::{APP_USER_AGENT, DEFAULT_INDEX};
+use super::{find_plugin, resolve_plugin_dir};
+use super::repository::{APP_USER_AGENT, DEFAULT_INDEX};
 
 use super::InstallationSource;
 
