@@ -18,7 +18,8 @@ pub async fn verify_mock_server(host: &str, port: u16, matches: &ArgMatches, usa
   let (id, id_type) = match (mock_server_id, mock_server_port) {
     (Some(id), _) => (id.clone(), "id"),
     (_, Some(port)) => (port.to_string(), "port"),
-    _ => crate::cli::pact_mock_server_cli::main::display_error("Either an ID or port must be provided".to_string(), usage)
+    _ => {crate::cli::pact_mock_server_cli::main::display_error("Either an ID or port must be provided".to_string(), usage);
+    Err(2)?}
   };
 
   let client = reqwest::Client::new();
@@ -53,16 +54,20 @@ pub async fn verify_mock_server(host: &str, port: u16, matches: &ArgMatches, usa
                   Err(err) => {
                     error!("Failed to parse JSON: {}\n{}", err, body);
                     crate::cli::pact_mock_server_cli::main::display_error(format!("Failed to parse JSON: {}\n{}", err, body), usage);
+                    Err(2)
                   }
                 }
               },
               Err(err) => {
                 error!("Failed to parse JSON: {}", err);
                 crate::cli::pact_mock_server_cli::main::display_error(format!("Failed to parse JSON: {}", err), usage);
+                Err(2)
               }
             }
           },
-          _ => crate::cli::pact_mock_server_cli::main::display_error(format!("Unexpected response from master mock server '{}': {}", url, result.status()), usage)
+          _ => {crate::cli::pact_mock_server_cli::main::display_error(format!("Unexpected response from master mock server '{}': {}", url, result.status()), usage);
+          Err(2)
+        }
         }
       } else {
         println!("Mock server with {} '{}' verified ok", id, id_type);
@@ -71,6 +76,7 @@ pub async fn verify_mock_server(host: &str, port: u16, matches: &ArgMatches, usa
     },
     Err(err) => {
       crate::cli::pact_mock_server_cli::main::display_error(format!("Failed to connect to the master mock server '{}': {}", url, err), usage);
+      Err(2)
     }
   }
 }

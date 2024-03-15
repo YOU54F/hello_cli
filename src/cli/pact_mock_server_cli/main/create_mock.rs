@@ -34,6 +34,7 @@ pub async fn create_mock_server(host: &str, port: u16, matches: &ArgMatches, usa
         Ok(json) => json,
         Err(err) => {
           crate::cli::pact_mock_server_cli::main::display_error(format!("Failed to send pact as JSON '{}': {}", file, err), usage);
+          return Err(2);
         }
       };
       let resp = client.post(url.as_str())
@@ -54,25 +55,31 @@ pub async fn create_mock_server(host: &str, port: u16, matches: &ArgMatches, usa
                   .ok_or_else(|| handle_error("Invalid JSON received from master server - mockServer has no port attribute"))?
                   .as_u64().ok_or_else(|| handle_error("Invalid JSON received from master server - mockServer port attribute is not a number"))?;
                 println!("Mock server {} started on port {}", id, port);
-                Ok(())
+                return Ok(());
               },
               Err(err) => {
                 error!("Failed to parse JSON: {}", err);
                 crate::cli::pact_mock_server_cli::main::display_error(format!("Failed to parse JSON: {}", err), usage);
+                return Err(2);
               }
             }
           } else {
             crate::cli::pact_mock_server_cli::main::display_error(format!("Master mock server returned an error: {}\n{}",
               response.status(), response.text().await.unwrap_or_default()), usage);
           }
+          Err(2)
         }
         Err(err) => {
             crate::cli::pact_mock_server_cli::main::display_error(format!("Failed to connect to the master mock server '{}': {}", url, err), usage);
+
+            Err(2)
         }
       }
     },
     Err(err) => {
       crate::cli::pact_mock_server_cli::main::display_error(format!("Failed to load pact file '{}': {}", file, err), usage);
+
+      Err(2)
     }
   }
 }

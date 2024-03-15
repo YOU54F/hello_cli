@@ -1,7 +1,7 @@
 use clap::{Arg, Command};
-mod pact_verifier_cli;
-mod pact_mock_server_cli;
-mod pact_stub_server_cli;
+pub mod pact_verifier_cli;
+pub mod pact_mock_server_cli;
+pub mod pact_stub_server_cli;
 
 pub fn build_cli() -> Command {
     let app = Command::new("pact_cli")
@@ -35,10 +35,10 @@ pub fn build_cli() -> Command {
         )
         .subcommand(Command::new("pactflow").subcommand(add_publish_provider_contract_subcommand()))
         .subcommand(add_completions_subcommand())
-        .subcommand(add_plugin_cli_subcommand())
+        .subcommand(add_plugin_cli_subcommand().arg_required_else_help(true))
         .subcommand(pact_mock_server_cli::main::setup_args())
         .subcommand(pact_stub_server_cli::main::build_args())
-        .subcommand(pact_verifier_cli::main::build_args());
+        .subcommand(pact_verifier_cli::main::build_args().arg_required_else_help(true).disable_version_flag(true));
     // Continue adding other subcommands as needed
     // ...
     app
@@ -65,6 +65,7 @@ fn add_completions_subcommand() -> Command {
 
 fn add_plugin_cli_subcommand() -> Command {
     Command::new("plugin") 
+    .arg_required_else_help(true)
     .about("CLI utility for Pact plugins")
     .arg(Arg::new("yes")
         .short('y')
@@ -104,11 +105,11 @@ fn add_plugin_cli_subcommand() -> Command {
         )
         
         ))
-
     .subcommand(Command::new("env")
         .about("Print out the Pact plugin environment config"))
     .subcommand(Command::new("install")
         .about("Install a plugin")
+        .arg_required_else_help(true)
     .arg(Arg::new("source_type")
         .short('t')
         .long("source-type")
@@ -133,8 +134,7 @@ fn add_plugin_cli_subcommand() -> Command {
         .short('v')
         .num_args(1)
         .help("The version to install. This is only used for known plugins.")
-        .value_name("VERSION")))
-        
+        .value_name("VERSION")))      
     .subcommand(Command::new("remove")
         .about("Remove a plugin")
         .arg(Arg::new("yes")
@@ -150,6 +150,7 @@ fn add_plugin_cli_subcommand() -> Command {
     
     )
     .subcommand(Command::new("enable")
+    .arg_required_else_help(true)
         .about("Enable a plugin version")
         .arg(Arg::new("name")
         .required(true)
@@ -159,6 +160,7 @@ fn add_plugin_cli_subcommand() -> Command {
         .value_name("VERSION"))
     )
     .subcommand(Command::new("disable")
+    .arg_required_else_help(true)
         .about("Disable a plugin version")
         .arg(Arg::new("name")
         .required(true)
@@ -168,6 +170,7 @@ fn add_plugin_cli_subcommand() -> Command {
         .value_name("VERSION"))
     )
     .subcommand(Command::new("repository")
+        .arg_required_else_help(true)
         .about("Sub-commands for dealing with a plugin repository")
         .subcommand(Command::new("validate")
         .about("Check the consistency of the repository index file")

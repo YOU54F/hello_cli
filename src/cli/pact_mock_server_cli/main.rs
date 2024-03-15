@@ -12,6 +12,7 @@ use std::str::FromStr;
 use std::sync::Mutex;
 
 use anyhow::anyhow;
+use clap::ArgMatches;
 use clap::{Arg, ArgAction, command, Command};
 use clap::error::ErrorKind;
 use lazy_static::*;
@@ -22,16 +23,18 @@ use tracing_core::LevelFilter;
 use tracing_subscriber::fmt::writer::MakeWriterExt;
 use tracing_subscriber::FmtSubscriber;
 use uuid::Uuid;
+use tracing::error;
 
 use pact_mock_server::server_manager::ServerManager;
 
-pub(crate) fn display_error(error: String, usage: &str) -> ! {
-    eprintln!("ERROR: {}", error);
-    eprintln!();
-    eprintln!("{}", usage);
-    panic!("{}", error)
+pub(crate) fn display_error(error: String, usage: &str) -> (std::string::String, &str){
+  eprintln!("ERROR: {}", error);
+  eprintln!();
+  eprintln!("{}", usage);
+  ("foo".to_string(), "bar")
+ 
 }
-
+// std::string::String, &str)
 pub(crate) fn handle_error(error: &str) -> i32 {
   eprintln!("ERROR: {}", error);
   eprintln!();
@@ -44,7 +47,7 @@ mod list;
 mod verify;
 mod shutdown;
 
-fn print_version() {
+pub fn print_version() {
     println!("pact mock server version  : v{}", clap::crate_version!());
     println!("pact specification version: v{}", PactSpecification::V4.version_str());
 }
@@ -113,59 +116,12 @@ lazy_static!{
   pub(crate) static ref SERVER_MANAGER: Mutex<ServerManager> = Mutex::new(ServerManager::new());
 }
 
-async fn handle_command_args() -> Result<(), i32> {
+pub async fn handle_command_args() -> Result<(), i32> {
   let mut app = setup_args();
 
-  let usage = app.render_usage().to_string();
   let matches = app.try_get_matches();
   match matches {
-    Ok(ref matches) => {
-      let log_level = matches.get_one::<String>("loglevel").map(|lvl| lvl.as_str());
-      let no_file_log = matches.get_flag("no-file-log");
-      let no_term_log = matches.get_flag("no-term-log");
-      if let Err(err) = setup_loggers(log_level.unwrap_or("info"),
-        matches.subcommand_name().unwrap(),
-        matches.subcommand().map(|(name, args)| {
-          if name == "start" {
-            args.get_one::<String>("output").map(|o| o.as_str())
-          } else {
-            None
-          }
-        }).flatten(),
-        no_file_log,
-        no_term_log
-      ) {
-        eprintln!("WARN: Could not setup loggers: {}", err);
-        eprintln!();
-      }
-
-      let port = *matches.get_one::<u16>("port").unwrap_or(&8080);
-      let localhost = "localhost".to_string();
-      let host = matches.get_one::<String>("host").unwrap_or(&localhost);
-
-      match matches.subcommand() {
-        Some(("start", sub_matches)) => {
-          let output_path = sub_matches.get_one::<String>("output").map(|s| s.to_owned());
-          let base_port = sub_matches.get_one::<u16>("base-port").cloned();
-          let server_key = sub_matches.get_one::<String>("server-key").map(|s| s.to_owned())
-            .unwrap_or_else(|| rand::thread_rng().sample_iter(Alphanumeric).take(16).map(char::from).collect::<String>());
-          {
-            let inner = (*SERVER_OPTIONS).lock().unwrap();
-            let mut options = inner.deref().borrow_mut();
-            options.output_path = output_path;
-            options.base_port = base_port;
-            options.server_key = server_key;
-          }
-          server::start_server(port).await
-        },
-        Some(("list", _)) => list::list_mock_servers(host, port, usage.as_str()).await,
-        Some(("create", sub_matches)) => create_mock::create_mock_server(host, port, sub_matches, usage.as_str()).await,
-        Some(("verify", sub_matches)) => verify::verify_mock_server(host, port, sub_matches, usage.as_str()).await,
-        Some(("shutdown", sub_matches)) => shutdown::shutdown_mock_server(host, port, sub_matches, usage.as_str()).await,
-        Some(("shutdown-master", sub_matches)) => shutdown::shutdown_master_server(host, port, sub_matches, usage.as_str()).await,
-        _ => Err(3)
-      }
-    },
+    Ok(results) => handle_matches(&results).await,
     Err(ref err) => {
       match err.kind() {
         ErrorKind::DisplayHelp => {
@@ -185,6 +141,55 @@ async fn handle_command_args() -> Result<(), i32> {
   }
 }
 
+pub async fn handle_matches(matches: &ArgMatches) -> Result<(), i32> {
+  let usage: String = "todo - usage".to_string();
+  // let usage: String = app.render_usage().to_string();
+  let log_level = matches.get_one::<String>("loglevel").map(|lvl| lvl.as_str());
+  let no_file_log = matches.get_flag("no-file-log");
+  let no_term_log = matches.get_flag("no-term-log");
+  if let Err(err) = setup_loggers(log_level.unwrap_or("info"),
+    matches.subcommand_name().unwrap(),
+    matches.subcommand().map(|(name, args)| {
+      if name == "start" {
+        args.get_one::<String>("output").map(|o| o.as_str())
+      } else {
+        None
+      }
+    }).flatten(),
+    no_file_log,
+    no_term_log
+  ) {
+    eprintln!("WARN: Could not setup loggers: {}", err);
+    eprintln!();
+  }
+
+  let port = *matches.get_one::<u16>("port").unwrap_or(&8080);
+  let localhost = "localhost".to_string();
+  let host = matches.get_one::<String>("host").unwrap_or(&localhost);
+
+  match matches.subcommand() {
+    Some(("start", sub_matches)) => {
+      let output_path = sub_matches.get_one::<String>("output").map(|s| s.to_owned());
+      let base_port = sub_matches.get_one::<u16>("base-port").cloned();
+      let server_key = sub_matches.get_one::<String>("server-key").map(|s| s.to_owned())
+        .unwrap_or_else(|| rand::thread_rng().sample_iter(Alphanumeric).take(16).map(char::from).collect::<String>());
+      {
+        let inner = (*SERVER_OPTIONS).lock().unwrap();
+        let mut options = inner.deref().borrow_mut();
+        options.output_path = output_path;
+        options.base_port = base_port;
+        options.server_key = server_key;
+      }
+      server::start_server(port).await
+    },
+    Some(("list", _)) => list::list_mock_servers(host, port, usage.as_str()).await,
+    Some(("create", sub_matches)) => create_mock::create_mock_server(host, port, sub_matches, usage.as_str()).await,
+    Some(("verify", sub_matches)) => verify::verify_mock_server(host, port, sub_matches, usage.as_str()).await,
+    Some(("shutdown", sub_matches)) => shutdown::shutdown_mock_server(host, port, sub_matches, usage.as_str()).await,
+    Some(("shutdown-master", sub_matches)) => shutdown::shutdown_master_server(host, port, sub_matches, usage.as_str()).await,
+    _ => Err(3)
+  }
+}
 pub fn setup_args() -> Command {
   #[allow(unused_mut)]
   let mut create_command = Command::new("create")

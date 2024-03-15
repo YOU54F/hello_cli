@@ -269,6 +269,18 @@ pub fn run(args:&ArgMatches) -> Result<(), ExitCode> {
   let result = match args.subcommand() {
     
     Some(("list", args)) => list_plugins(args),
+    Some(("env", _)) => print_env(),
+    Some(("install", args)) => install::install_plugin(
+      args.get_one::<String>("source").unwrap(), 
+      &Some(args.get_one::<InstallationSource>("source_type").unwrap().clone()), 
+      args.get_flag("yes"), 
+      args.get_flag("skip_if_installed"), 
+      &Some(args.get_one::<String>("version").unwrap().clone())
+    ),
+    Some(("remove", args)) => remove_plugin(args.get_one::<String>("name").unwrap(), &Some(args.get_one::<String>("version").unwrap().clone()),args.get_flag("yes")),
+    Some(("enable", args)) => enable_plugin(args.get_one::<String>("name").unwrap(), &Some(args.get_one::<String>("version").unwrap().clone())),
+    Some(("disable", args)) => disable_plugin(args.get_one::<String>("name").unwrap(), &Some(args.get_one::<String>("version").unwrap().clone())),
+    Some(("repository", args)) => repository::handle_command(args),
     None => unimplemented!("Handle empty ArgMatches case"), 
     Some((&_, _)) => unimplemented!("Handle unknown subcommand case")   
     // Commands::List(command) => list_plugins(command),

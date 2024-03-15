@@ -326,7 +326,7 @@ pub async fn handle_cli(version: &'static str) -> Result<(), i32> {
   }
 }
 
-async fn handle_matches(matches: &ArgMatches) -> Result<(), i32> {
+pub async fn handle_matches(matches: &ArgMatches) -> Result<(), i32> {
   let coloured_output = setup_output(matches);
 
   let provider = configure_provider(matches);
@@ -508,7 +508,7 @@ pub(crate) fn configure_provider(matches: &ArgMatches) -> ProviderInfo {
   }
 }
 
-fn print_version(version: &str) {
+pub fn print_version(version: &str) {
   println!("pact verifier version   : v{}", version);
   println!("pact specification      : v{}", PactSpecification::V4.version_str());
   println!("models version          : v{}", PACT_RUST_VERSION.unwrap_or_default());

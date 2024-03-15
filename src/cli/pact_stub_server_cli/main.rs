@@ -109,7 +109,7 @@ async fn main() -> Result<(), ExitCode> {
   handle_command_args(args).await
 }
 
-fn print_version() {
+pub fn print_version() {
     println!("pact stub server version  : v{}", env!("CARGO_PKG_VERSION"));
     println!("pact specification version: v{}", PactSpecification::V4.version_str());
 }
@@ -196,53 +196,8 @@ fn pact_source(matches: &ArgMatches) -> Vec<PactSource> {
 async fn handle_command_args(args: Vec<String>) -> Result<(), ExitCode> {
   let app = build_args();
   match app.try_get_matches_from(args) {
-    Ok(ref matches) => {
-      let level = matches.get_one::<String>("loglevel").cloned()
-        .unwrap_or_else(|| "info".to_string());
-      setup_logger(level.as_str());
-      let sources = pact_source(matches);
+    Ok(results) => handle_matches(&results).await,
 
-      let pacts = load_pacts(sources, matches.get_flag("insecure-tls"),
-        matches.get_one("ext")).await;
-      if pacts.iter().any(|p| p.is_err()) {
-        error!("There were errors loading the pact files.");
-        for error in pacts.iter()
-          .filter(|p| p.is_err())
-          .map(|e| match e {
-            Err(err) => err.clone(),
-            _ => panic!("Internal Code Error - was expecting an error but was not")
-          }) {
-          error!("  - {}", error);
-        }
-        Err(ExitCode::from(3))
-      } else {
-        let port = *matches.get_one::<u16>("port").unwrap_or(&0);
-        let provider_state = matches.get_one::<Regex>("provider-state").cloned();
-        let provider_state_header_name = matches.get_one::<String>("provider-state-header-name").cloned();
-        let empty_provider_states = matches.get_flag("empty-provider-state");
-        let pacts = pacts.iter()
-          .map(|result| {
-            // Currently, as_v4_pact won't fail as it upgrades older formats to V4, so is safe to unwrap
-            let (p, s) = result.as_ref().unwrap();
-            (p.as_v4_pact().unwrap(), s.clone())
-          })
-          .collect::<Vec<_>>();
-        let interactions: usize = pacts.iter().map(|(p, _)| p.interactions.len()).sum();
-        info!("Loaded {} pacts ({} total interactions)", pacts.len(), interactions);
-        let auto_cors = matches.get_flag("cors");
-        let referer = matches.get_flag("cors-referer");
-        let server_handler = ServerHandler::new(
-          pacts,
-          auto_cors,
-          referer,
-          provider_state,
-          provider_state_header_name,
-          empty_provider_states);
-        tokio::task::spawn_blocking(move || {
-          server_handler.start_server(port)
-        }).await.unwrap()
-      }
-    },
     Err(ref err) => {
       match err.kind() {
         ErrorKind::DisplayHelp => {
@@ -260,6 +215,53 @@ async fn handle_command_args(args: Vec<String>) -> Result<(), ExitCode> {
   }
 }
 
+pub async fn handle_matches(matches: &ArgMatches) -> Result<(), ExitCode> {
+  let level = matches.get_one::<String>("loglevel").cloned()
+  .unwrap_or_else(|| "info".to_string());
+setup_logger(level.as_str());
+let sources = pact_source(matches);
+
+let pacts = load_pacts(sources, matches.get_flag("insecure-tls"),
+  matches.get_one("ext")).await;
+if pacts.iter().any(|p| p.is_err()) {
+  error!("There were errors loading the pact files.");
+  for error in pacts.iter()
+    .filter(|p| p.is_err())
+    .map(|e| match e {
+      Err(err) => err.clone(),
+      _ => panic!("Internal Code Error - was expecting an error but was not")
+    }) {
+    error!("  - {}", error);
+  }
+  Err(ExitCode::from(3))
+} else {
+  let port = *matches.get_one::<u16>("port").unwrap_or(&0);
+  let provider_state = matches.get_one::<Regex>("provider-state").cloned();
+  let provider_state_header_name = matches.get_one::<String>("provider-state-header-name").cloned();
+  let empty_provider_states = matches.get_flag("empty-provider-state");
+  let pacts = pacts.iter()
+    .map(|result| {
+      // Currently, as_v4_pact won't fail as it upgrades older formats to V4, so is safe to unwrap
+      let (p, s) = result.as_ref().unwrap();
+      (p.as_v4_pact().unwrap(), s.clone())
+    })
+    .collect::<Vec<_>>();
+  let interactions: usize = pacts.iter().map(|(p, _)| p.interactions.len()).sum();
+  info!("Loaded {} pacts ({} total interactions)", pacts.len(), interactions);
+  let auto_cors = matches.get_flag("cors");
+  let referer = matches.get_flag("cors-referer");
+  let server_handler = ServerHandler::new(
+    pacts,
+    auto_cors,
+    referer,
+    provider_state,
+    provider_state_header_name,
+    empty_provider_states);
+  tokio::task::spawn_blocking(move || {
+    server_handler.start_server(port)
+  }).await.unwrap()
+}
+}
 pub fn build_args() -> Command {
   Command::new("stub")
     .about(format!("Pact Stub Server {}", crate_version!()))

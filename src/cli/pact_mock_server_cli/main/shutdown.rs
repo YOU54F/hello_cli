@@ -22,7 +22,9 @@ pub async fn shutdown_mock_server(host: &str, port: u16, matches: &ArgMatches, u
             println!("No mock server found with {} '{}', use the 'list' command to get a list of available mock servers.", id_type, id);
             Err(3)
           },
-          _ =>  crate::cli::pact_mock_server_cli::main::display_error(format!("Unexpected response from master mock server '{}': {}", url, result.status()), usage)
+          _ =>  {crate::cli::pact_mock_server_cli::main::display_error(format!("Unexpected response from master mock server '{}': {}", url, result.status()), usage);
+        
+          Err(2)}
         }
       } else {
         println!("Mock server with {} '{}' shutdown ok", id_type, id);
@@ -31,6 +33,8 @@ pub async fn shutdown_mock_server(host: &str, port: u16, matches: &ArgMatches, u
     },
     Err(err) => {
      crate::cli::pact_mock_server_cli::main::display_error(format!("Failed to connect to the master mock server '{}': {}", url, err), usage);
+
+     Err(2)
     }
   }
 }
@@ -48,10 +52,14 @@ pub async fn shutdown_master_server(host: &str, port: u16, matches: &ArgMatches,
     Ok(result) => {
       if !result.status().is_success() {
         if result.status() == StatusCode::FORBIDDEN {
-         crate::cli::pact_mock_server_cli::main::display_error(format!("Invalid server key: got response {}", result.status()), usage)
+         crate::cli::pact_mock_server_cli::main::display_error(format!("Invalid server key: got response {}", result.status()), usage);
+
+         Err(2)
         } else {
          crate::cli::pact_mock_server_cli::main::display_error(format!("Unexpected response from master mock server '{}': {}",
-            url, result.status()), usage)
+            url, result.status()), usage);
+
+            Err(2)
         }
       } else {
         println!("Master server shutting down ok");
@@ -60,6 +68,7 @@ pub async fn shutdown_master_server(host: &str, port: u16, matches: &ArgMatches,
     },
     Err(err) => {
      crate::cli::pact_mock_server_cli::main::display_error(format!("Failed to connect to the master mock server '{}': {}", url, err), usage);
+     return Err(2)
     }
   }
 }

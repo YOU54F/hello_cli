@@ -1,7 +1,7 @@
 use clap::{Arg, ArgAction, ArgGroup, Command, command};
 use clap::builder::{NonEmptyStringValueParser, PossibleValuesParser};
 use regex::Regex;
-
+// use crate::cli::pact_verifier_cli::main::get_version_info;
 fn port_value(v: &str) -> Result<u16, String> {
   v.parse::<u16>().map_err(|e| format!("'{}' is not a valid port value: {}", v, e) )
 }
@@ -32,7 +32,10 @@ fn transport_value(v: &str) -> Result<(String, u16), String> {
 
 pub(crate) fn setup_app() -> Command {
   Command::new("verifier")
-    .disable_version_flag(true)
+  // .long_version(
+  //   get_version_info("0.0.3")
+  // )
+    // .disable_version_flag(true)
     .disable_help_flag(true)
     .arg(Arg::new("help")
       .long("help")
@@ -41,6 +44,7 @@ pub(crate) fn setup_app() -> Command {
     .arg(Arg::new("version")
       .short('v')
       .long("version")
+      .num_args(0)
       .action(ArgAction::Version)
       .help("Print version information and exit"))
 

@@ -14,7 +14,7 @@ Download the latest [pact-ruby-standalone][pact-ruby-standalone] package. You do
 
 To connect to a Pact Broker that uses custom SSL cerificates, set the environment variable `$SSL_CERT_FILE` or `$SSL_CERT_DIR` to a path that contains the appropriate certificate. Read more at https://docs.pact.io/pact_broker/advanced_topics/using-tls#for-non-jvm
 
-## Usage - CLI
+## Pact Broker CLI
 
 All commands prefixed with `pact-broker` can be used with the OSS Pact Broker and PactFlow. Commands prefixed with `pactflow` can only be used with PactFlow.
 
@@ -25,9 +25,6 @@ Pact Broker authentication can be performed either using basic auth or a bearer 
 Basic auth parameters can be specified using the `$PACT_BROKER_USERNAME` and `$PACT_BROKER_PASSWORD` environment variables, or the `-u` or `--broker-username` and `-p` or `--broker-password` parameters.
 
 Authentication using a bearer token can be specified using the environment variable `$PACT_BROKER_TOKEN` or the `-k` or `--broker-token` parameters. This bearer token authentication is used by [PactFlow](https://pactflow.io) and is not available in the [OSS Pact Broker](https://docs.pact.io/pact_broker/), which only supports basic auth.
-
-
-
 
 
 ### Pacts
@@ -1277,5 +1274,340 @@ Arguments:
 
 Options:
   -h, --help  Print help
+
+```
+
+## Pact Mock Server CLI
+
+```console
+$ pact_cli mock --help
+Standalone Pact mock server
+
+Usage: pact_cli mock [OPTIONS] [COMMAND]
+
+Commands:
+  start            Starts the master mock server
+  list             Lists all the running mock servers
+  create           Creates a new mock server from a pact file
+  verify           Verify the mock server by id or port number, and generate a pact file if all ok
+  shutdown         Shutdown the mock server by id or port number, releasing all its resources
+  shutdown-master  Performs a graceful shutdown of the master server (displayed when it started)
+  help             Print this message or the help of the given subcommand(s)
+
+Options:
+      --help                 Print help and exit
+  -v, --version              Print version information and exit
+  -p, --port <port>          port the master mock server runs on (defaults to 8080)
+  -h, --host <host>          hostname the master mock server runs on (defaults to localhost)
+  -l, --loglevel <loglevel>  Log level for mock servers to write to the log file (defaults to info) [possible values: error, warn, info, debug, trace, none]
+      --no-term-log          Turns off using terminal ANSI escape codes
+      --no-file-log          Do not log to an output file
+
+```
+
+```console
+$ pact_cli mock start --help
+Starts the master mock server
+
+Usage: pact_cli mock start [OPTIONS]
+
+Options:
+      --help                     Print help and exit
+  -o, --output <output>          the directory where to write files to (defaults to current directory)
+      --base-port <base-port>    the base port number that mock server ports will be allocated from. If not specified, ports will be randomly assigned by the OS.
+  -v, --version                  Print version information and exit
+  -p, --port <port>              port the master mock server runs on (defaults to 8080)
+      --server-key <server-key>  the server key to use to authenticate shutdown requests (defaults to a random generated one)
+  -h, --host <host>              hostname the master mock server runs on (defaults to localhost)
+  -l, --loglevel <loglevel>      Log level for mock servers to write to the log file (defaults to info) [possible values: error, warn, info, debug, trace, none]
+      --no-term-log              Turns off using terminal ANSI escape codes
+      --no-file-log              Do not log to an output file
+
+```
+
+```console
+$ pact_cli mock list --help
+Lists all the running mock servers
+
+Usage: pact_cli mock list [OPTIONS]
+
+Options:
+      --help                 Print help and exit
+  -v, --version              Print version information and exit
+  -p, --port <port>          port the master mock server runs on (defaults to 8080)
+  -h, --host <host>          hostname the master mock server runs on (defaults to localhost)
+  -l, --loglevel <loglevel>  Log level for mock servers to write to the log file (defaults to info) [possible values: error, warn, info, debug, trace, none]
+      --no-term-log          Turns off using terminal ANSI escape codes
+      --no-file-log          Do not log to an output file
+
+```
+
+```console
+$ pact_cli mock create --help
+Creates a new mock server from a pact file
+
+Usage: pact_cli mock create [OPTIONS] --file <file>
+
+Options:
+  -f, --file <file>          the pact file to define the mock server
+      --help                 Print help and exit
+  -c, --cors-preflight       Handle CORS pre-flight requests
+  -v, --version              Print version information and exit
+  -p, --port <port>          port the master mock server runs on (defaults to 8080)
+  -h, --host <host>          hostname the master mock server runs on (defaults to localhost)
+  -l, --loglevel <loglevel>  Log level for mock servers to write to the log file (defaults to info) [possible values: error, warn, info, debug, trace, none]
+      --no-term-log          Turns off using terminal ANSI escape codes
+      --no-file-log          Do not log to an output file
+
+```
+
+
+```console
+$ pact_cli mock verify --help
+Verify the mock server by id or port number, and generate a pact file if all ok
+
+Usage: pact_cli mock verify [OPTIONS]
+
+Options:
+      --help
+          Print help and exit
+  -i, --mock-server-id <mock-server-id>
+          the ID of the mock server
+  -m, --mock-server-port <mock-server-port>
+          the port number of the mock server
+  -v, --version
+          Print version information and exit
+  -p, --port <port>
+          port the master mock server runs on (defaults to 8080)
+  -h, --host <host>
+          hostname the master mock server runs on (defaults to localhost)
+  -l, --loglevel <loglevel>
+          Log level for mock servers to write to the log file (defaults to info) [possible values: error, warn, info, debug, trace, none]
+      --no-term-log
+          Turns off using terminal ANSI escape codes
+      --no-file-log
+          Do not log to an output file
+
+```
+
+```console
+$ pact_cli mock shutdown --help
+Shutdown the mock server by id or port number, releasing all its resources
+
+Usage: pact_cli mock shutdown [OPTIONS]
+
+Options:
+      --help
+          Print help and exit
+  -i, --mock-server-id <mock-server-id>
+          the ID of the mock server
+  -m, --mock-server-port <mock-server-port>
+          the port number of the mock server
+  -v, --version
+          Print version information and exit
+  -p, --port <port>
+          port the master mock server runs on (defaults to 8080)
+  -h, --host <host>
+          hostname the master mock server runs on (defaults to localhost)
+  -l, --loglevel <loglevel>
+          Log level for mock servers to write to the log file (defaults to info) [possible values: error, warn, info, debug, trace, none]
+      --no-term-log
+          Turns off using terminal ANSI escape codes
+      --no-file-log
+          Do not log to an output file
+
+```
+
+
+```console
+$ pact_cli mock shutdown-master --help
+Performs a graceful shutdown of the master server (displayed when it started)
+
+Usage: pact_cli mock shutdown-master [OPTIONS] --server-key <server-key>
+
+Options:
+      --help                     Print help and exit
+  -k, --server-key <server-key>  the server key of the master server
+      --period <period>          the period of time in milliseconds to allow the server to shutdown (defaults to 100ms)
+  -v, --version                  Print version information and exit
+  -p, --port <port>              port the master mock server runs on (defaults to 8080)
+  -h, --host <host>              hostname the master mock server runs on (defaults to localhost)
+  -l, --loglevel <loglevel>      Log level for mock servers to write to the log file (defaults to info) [possible values: error, warn, info, debug, trace, none]
+      --no-term-log              Turns off using terminal ANSI escape codes
+      --no-file-log              Do not log to an output file
+
+```
+
+## Pact Stub Server CLI
+
+```console
+$ pact_cli stub --help
+Pact Stub Server 0.1.0
+
+Usage: pact_cli stub [OPTIONS]
+
+Options:
+  -l, --loglevel <loglevel>
+          Log level (defaults to info) [default: info] [possible values: error, warn, info, debug, trace, none]
+  -f, --file <file>
+          Pact file to load (can be repeated)
+  -d, --dir <dir>
+          Directory of pact files to load (can be repeated)
+  -e, --extension <ext>
+          File extension to use when loading from a directory (default is json)
+  -u, --url <url>
+          URL of pact file to fetch (can be repeated)
+  -b, --broker-url <broker-url>
+          URL of the pact broker to fetch pacts from [env: PACT_BROKER_BASE_URL=]
+      --user <user>
+          User and password to use when fetching pacts from URLS or Pact Broker in user:password form
+  -t, --token <token>
+          Bearer token to use when fetching pacts from URLS or Pact Broker
+  -p, --port <port>
+          Port to run on (defaults to random port assigned by the OS)
+  -o, --cors
+          Automatically respond to OPTIONS requests and return default CORS headers
+      --cors-referer
+          Set the CORS Access-Control-Allow-Origin header to the Referer
+      --insecure-tls
+          Disables TLS certificate validation
+  -s, --provider-state <provider-state>
+          Provider state regular expression to filter the responses by
+      --provider-state-header-name <provider-state-header-name>
+          Name of the header parameter containing the provider state to be used in case multiple matching interactions are found
+      --empty-provider-state
+          Include empty provider states when filtering with --provider-state
+      --consumer-name <consumer-name>
+          Consumer name or regex to use to filter the Pacts fetched from the Pact broker (can be repeated)
+      --provider-name <provider-name>
+          Provider name or regex to use to filter the Pacts fetched from the Pact broker (can be repeated)
+  -v, --version
+          Print version information
+  -h, --help
+          Print help
+
+```
+
+```console
+$ pact_cli stub --file foo
+? 3
+[2m2024-03-15T18:39:25.892966Z[0m [31mERROR[0m main [2mpact_cli::cli::pact_stub_server_cli::main[0m[2m:[0m There were errors loading the pact files.
+[2m2024-03-15T18:39:25.892976Z[0m [31mERROR[0m main [2mpact_cli::cli::pact_stub_server_cli::main[0m[2m:[0m   - Failed to load pact file: No such file or directory (os error 2)
+Error: ExitCode(unix_exit_status(3))
+
+```
+
+## Pact Verifier CLI
+
+```console
+$ pact_cli verifier --help
+Usage: pact_cli verifier [OPTIONS]
+
+Options:
+      --help     Print help and exit
+  -v, --version  Print version information and exit
+
+Logging options:
+  -l, --loglevel <loglevel>  Log level to emit log events at (defaults to warn) [possible values: error, warn, info, debug, trace, none]
+      --pretty-log           Emits excessively pretty, multi-line logs, optimized for human readability.
+      --full-log             This emits human-readable, single-line logs for each event that occurs, with the current span context displayed before the formatted representation of the event.
+      --compact-log          Emit logs optimized for short line lengths.
+  -j, --json <json-file>     Generate a JSON report of the verification
+  -x, --junit <junit-file>   Generate a JUnit XML report of the verification (requires the junit feature)
+      --no-colour            Disables ANSI escape codes in the output [aliases: no-color]
+
+Loading pacts options:
+  -f, --file <file>
+          Pact file to verify (can be repeated)
+  -d, --dir <dir>
+          Directory of pact files to verify (can be repeated)
+  -u, --url <url>
+          URL of pact file to verify (can be repeated)
+  -b, --broker-url <broker-url>
+          URL of the pact broker to fetch pacts from to verify (requires the provider name parameter) [env: PACT_BROKER_BASE_URL=]
+      --webhook-callback-url <webhook-callback-url>
+          URL of a Pact to verify via a webhook callback. Requires the broker-url to be set.
+      --ignore-no-pacts-error
+          Do not fail if no pacts are found to verify
+
+Authentication options:
+      --user <user>          Username to use when fetching pacts from URLS [env: PACT_BROKER_USERNAME=]
+      --password <password>  Password to use when fetching pacts from URLS [env: PACT_BROKER_PASSWORD=]
+  -t, --token <token>        Bearer token to use when fetching pacts from URLS [env: PACT_BROKER_TOKEN=]
+
+Provider options:
+  -h, --hostname <hostname>
+          Provider hostname (defaults to localhost)
+  -p, --port <port>
+          Provider port (defaults to protocol default 80/443)
+      --transport <transport>
+          Provider protocol transport to use (http, https, grpc, etc.) [default: http]
+      --transports <transports>
+          Allows multiple protocol transports to be configured (http, https, grpc, etc.) with their associated port numbers separated by a colon. For example, use --transports http:8080 grpc:5555 to configure both.
+  -n, --provider-name <provider-name>
+          Provider name (defaults to provider)
+      --base-path <base-path>
+          Base path to add to all requests
+      --request-timeout <request-timeout>
+          Sets the HTTP request timeout in milliseconds for requests to the target API and for state change requests.
+  -H, --header <custom-header>
+          Add a custom header to be included in the calls to the provider. Values must be in the form KEY=VALUE, where KEY and VALUE contain ASCII characters (32-127) only. Can be repeated.
+      --disable-ssl-verification
+          Disables validation of SSL certificates
+
+Provider state options:
+  -s, --state-change-url <state-change-url>
+          URL to post state change requests to
+      --state-change-as-query
+          State change request data will be sent as query parameters instead of in the request body
+      --state-change-teardown
+          State change teardown requests are to be made after each interaction
+
+Filtering interactions:
+      --filter-description <filter-description>
+          Only validate interactions whose descriptions match this filter (regex format) [env: PACT_DESCRIPTION=]
+      --filter-state <filter-state>
+          Only validate interactions whose provider states match this filter (regex format) [env: PACT_PROVIDER_STATE=]
+      --filter-no-state
+          Only validate interactions that have no defined provider state [env: PACT_PROVIDER_NO_STATE=]
+  -c, --filter-consumer <filter-consumer>
+          Consumer name to filter the pacts to be verified (can be repeated)
+
+Publishing options:
+      --publish
+          Enables publishing of verification results back to the Pact Broker. Requires the broker-url and provider-version parameters.
+      --provider-version <provider-version>
+          Provider version that is being verified. This is required when publishing results.
+      --build-url <build-url>
+          URL of the build to associate with the published verification results.
+      --provider-tags <provider-tags>
+          Provider tags to use when publishing results. Accepts comma-separated values.
+      --provider-branch <provider-branch>
+          Provider branch to use when publishing results
+
+Pact Broker options:
+      --consumer-version-tags <consumer-version-tags>
+          Consumer tags to use when fetching pacts from the Broker. Accepts comma-separated values.
+      --consumer-version-selectors <consumer-version-selectors>
+          Consumer version selectors to use when fetching pacts from the Broker. Accepts a JSON string as per https://docs.pact.io/pact_broker/advanced_topics/consumer_version_selectors/. Can be repeated.
+      --enable-pending
+          Enables Pending Pacts
+      --include-wip-pacts-since <include-wip-pacts-since>
+          Allow pacts that don't match given consumer selectors (or tags) to  be verified, without causing the overall task to fail. For more information, see https://pact.io/wip
+
+```
+
+```console
+$ pact_cli verifier --file foo
+? 1
+[2m2024-03-15T18:39:25.902780Z[0m [31mERROR[0m main [2mpact_verifier[0m[2m:[0m Failed to load pact - [31mFailed to load pact 'foo' - No such file or directory (os error 2)[0m
+
+Failures:
+
+1) Failed to load pact - Failed to load pact 'foo' - No such file or directory (os error 2)
+
+
+There were 1 pact failures
+
 
 ```
