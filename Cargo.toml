@@ -95,7 +95,7 @@ strip = true      # Automatically strip symbols from the binary.
 opt-level = "z"   # Optimize for size.
 codegen-units = 1
 panic = "abort"
-# lto = true
+lto = true
 #  File  .text   Size Crate
 # 68.0% 100.3% 5.5MiB [Unknown]
 # 67.8% 100.0% 5.5MiB .text section size, the file size is 8.1MiB
@@ -110,7 +110,8 @@ inherits = "release"
 panic = "unwind"
 # if panic abort is set for aarch64 freebsd, it fails in cross
 # https://github.com/cross-rs/cross/issues/1363#issuecomment-1783917450
-[profile.release-aarch64-freebsd.dependencies]
+
+[target.'cfg(target_os = "freebsd")'.dependencies]
 indexmap = { version = "1.9.3", features = ["std"] }
 # requires std feature for detection with cross for aarch64-unknown-freebsd target
 # https://github.com/tower-rs/tower/issues/466
