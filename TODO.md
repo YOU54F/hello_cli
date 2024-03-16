@@ -63,6 +63,11 @@ warning: build failed, waiting for other jobs to finish...
 Error: Process completed with exit code 101.
 
 ```
+
+Related issues
+
+- https://github.com/tower-rs/tower/issues/466
+- https://github.com/indexmap-rs/indexmap/issues/144
   
 ### NetBSD
 
