@@ -59,7 +59,5 @@ jobs:
     - name: Run broker
       run: |
         ./pact_cli standalone & echo $! > pact_cli.pid
-        sleep 10
-        curl -X GET http://0.0.0.0:9292
         ./pact_cli pact-broker list-latest-pact-versions --broker-base-url http://0.0.0.0:9292
         kill $(cat pact_cli.pid)
