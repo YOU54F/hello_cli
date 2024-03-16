@@ -59,10 +59,7 @@ url = "2.5.0"
 urlencoding = "2.1.3"
 uuid = { version = "1.6.1", features = ["v4"] }
 webmachine-rust = "0.3.0"
-indexmap = { version = "1.9.3", features = ["std"] }
-# requires std feature for detection with cross for aarch64-unknown-freebsd target
-# https://github.com/tower-rs/tower/issues/466
-# https://github.com/indexmap-rs/indexmap/pull/145
+
 
 [dependencies.reqwest]
 version = "0.11.26"
@@ -113,3 +110,8 @@ inherits = "release"
 panic = "unwind"
 # if panic abort is set for aarch64 freebsd, it fails in cross
 # https://github.com/cross-rs/cross/issues/1363#issuecomment-1783917450
+[profile.release-aarch64-freebsd.dependencies]
+indexmap = { version = "1.9.3", features = ["std"] }
+# requires std feature for detection with cross for aarch64-unknown-freebsd target
+# https://github.com/tower-rs/tower/issues/466
+# https://github.com/indexmap-rs/indexmap/pull/145
