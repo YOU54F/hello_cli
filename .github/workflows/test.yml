@@ -216,6 +216,7 @@ jobs:
           fi
           if [[ ${{ matrix.job.target }} == "aarch64-unknown-freebsd" ]]; then
             echo "building with cargo nightly, plus std and core for aarch64-unknown-freebsd"
+            sudo apt install libstd-rust-dev
             cargo +nightly install cross --git https://github.com/cross-rs/cross
             cross +nightly build -Z build-std=std,core,alloc,proc_macro --bin ${{ env.BINARY_APP_NAME }} --profile release-aarch64-freebsd --target=${{ matrix.job.target }}
             mv target/aarch64-unknown-freebsd/release-aarch64-freebsd target/aarch64-unknown-freebsd/release
