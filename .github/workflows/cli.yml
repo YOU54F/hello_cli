@@ -58,4 +58,7 @@ jobs:
         ./pact_cli standalone --help
     - name: Run broker
       run: |
-        ./pact_cli standalone
+        ./pact_cli standalone & echo $! > pact_cli.pid
+        sleep 5
+        curl -X GET http://localhost:9292
+        kill $(cat pact_cli.pid)
