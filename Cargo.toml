@@ -43,10 +43,12 @@ thiserror = "1.0.51"
 time = "0.3.31"
 tokio = { version = "1.35.1", features = [] }
 toml = "0.8.8"
-tower = { version = "0.4.13", features =  ["balance" ,"buffer" ,"discover" ,"filter" ,"hedge" ,"limit" ,"load" ,"load-shed" ,"make" ,"reconnect" ,"retry" ,"spawn-ready" ,"steer" ,"timeout" ,"util"] }
+# tower-http = { version = "0.4.0", features =  ["add-extension","auth","catch-panic","compression-full","cors","decompression-full","follow-redirect","fs","limit","map-request-body","map-response-body","metrics","normalize-path","propagate-header","redirect","request-id","sensitive-headers","set-header","set-status","timeout","trace","util","validate-request"] }
 # tower = { version = "0.4.13", features =  ["balance" ,"buffer" ,"discover" ,"filter" ,"hedge" ,"limit" ,"load" ,"load-shed" ,"make" ,"ready-cache" ,"reconnect" ,"retry" ,"spawn-ready" ,"steer" ,"timeout" ,"util"] }
 # tower = { version = "0.4.13", features =  ["full"] }
-tower-http = { version = "0.4.0", features = ["full"] }
+# tower-http = { version = "0.4.0", features = ["full"] }
+tower = { version = "0.4.13", features =  [] }
+tower-http = { version = "0.4.0", features = ["trace"] }
 tower-service = { version = "0.3.2" }
 tracing = "0.1.40"
 tracing-appender = "0.2.3"
