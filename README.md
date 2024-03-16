@@ -994,6 +994,7 @@ Commands:
   pactflow     
   completions  Generates completion scripts for your shell
   docker       Run the Pact Broker as a Docker container
+  standalone   Install & Run the Pact Broker in $HOME/traveling-broker
   plugin       CLI utility for Pact plugins
   mock         Standalone Pact mock server
   stub         Pact Stub Server 0.1.0
