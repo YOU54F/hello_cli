@@ -4,6 +4,9 @@ use clap::error::ErrorKind;
 use clap_complete::{generate_to, Shell};
 use pact_broker::{HALClient, Link, PactBrokerError};
 use serde_json::Value;
+use std::env;
+use std::fs;
+use std::io::Write;
 use std::process::Command;
 use std::str::FromStr;
 mod pact_broker;
@@ -392,6 +395,75 @@ pub fn main() {
                     );
 
                     // Ok(());
+                }
+                Some(("standalone", args)) => {
+                    tokio::runtime::Runtime::new().unwrap().block_on(async {
+                        let os = match env::consts::OS {
+                            "macos" => "osx",
+                            other => other,
+                        };
+
+                        let arch = match env::consts::ARCH {
+                            "aarch64" => "arm64",
+                            other => other,
+                        };
+
+                        // check if os/arch is supported
+                        // supported are osx, linux and arm64, x86_64
+                        if os != "osx" && os != "linux" {
+                            println!("⚠️  Unsupported OS: {}", os);
+                            std::process::exit(1);
+                        }
+                        if arch != "arm64" && arch != "x86_64" {
+                            println!("⚠️  Unsupported architecture: {}", arch);
+                            std::process::exit(1);
+                        }
+
+                        // Store the binary in the user's home .pact/traveling-broker directory
+                        let home_dir = env::var("HOME").unwrap();
+                        let pact_dir = format!("{}/.pact/traveling-broker", home_dir);
+                        let _ = fs::create_dir_all(&pact_dir);
+                        let broker_archive_path = format!("{}/traveling-pact-20230803-3.2.2-{}-{}-full.tar.gz", pact_dir, os, arch);
+                        let app_path = format!("{}/pact-broker-app.sh", pact_dir);
+
+                        // check is app path exists, if so, do not download the file
+
+                        if !fs::metadata(&app_path).is_ok() {
+                            // Download the correct version of the traveling ruby binary
+                            let url = format!(
+                                "https://github.com/YOU54F/traveling-ruby/releases/download/rel-20230803-pact/traveling-pact-20230803-3.2.2-{}-{}-full.tar.gz",
+                                os, arch
+                            );
+                            let response = reqwest::get(&url).await.unwrap();
+                            let body = response.bytes().await.unwrap();
+                        
+
+                            let mut file = fs::File::create(&broker_archive_path).unwrap();
+                            let _ = file.write_all(&body);
+
+                            // Unpack the binary
+                            Command::new("tar")
+                                .arg("-xf")
+                                .arg(&broker_archive_path)
+                                .arg("-C")
+                                .arg(&pact_dir)
+                                .output()
+                                .expect("Failed to unpack the binary");
+                            let _ = fs::remove_file(broker_archive_path);
+                    }
+                        // Execute the pact-broker-app.sh file
+
+                        let mut child = Command::new(&app_path).spawn().unwrap();
+
+                        // Await SIGKILL from the user
+                        let _ = tokio::signal::ctrl_c().await;
+
+                        // Send SIGKILL to the app
+                        let _ = child.kill();
+
+                        Ok::<(), ()>(());
+
+                    })
                 }
                 Some(("docker", args)) => {
                     match args.subcommand() {

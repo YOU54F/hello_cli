@@ -36,6 +36,7 @@ pub fn build_cli() -> Command {
         .subcommand(Command::new("pactflow").subcommand(add_publish_provider_contract_subcommand()))
         .subcommand(add_completions_subcommand())
         .subcommand(add_docker_broker_subcommand())
+        .subcommand(add_standalone_broker_subcommand())
         .subcommand(add_plugin_cli_subcommand().arg_required_else_help(true))
         .subcommand(pact_mock_server_cli::main::setup_args())
         .subcommand(pact_stub_server_cli::main::build_args())
@@ -73,6 +74,10 @@ fn add_docker_broker_subcommand() -> Command {
     .subcommand(Command::new("remove")
     .about("Remove the Pact Broker Docker container"))
 
+}
+fn add_standalone_broker_subcommand() -> Command {
+    Command::new("standalone") 
+    .about("Install & Run the Pact Broker in $HOME/traveling-broker")
 }
 
 fn add_plugin_cli_subcommand() -> Command {
