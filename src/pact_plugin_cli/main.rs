@@ -1,6 +1,6 @@
-use std::{env, fs};
 use std::path::PathBuf;
 use std::process::ExitCode;
+use std::{env, fs};
 // use std::str::FromStr;
 
 use anyhow::anyhow;
@@ -19,8 +19,8 @@ use tracing_subscriber::FmtSubscriber;
 use super::main::list::{list_plugins, plugin_list};
 
 mod install;
-mod repository;
 mod list;
+mod repository;
 
 // #[derive(Parser, Debug)]
 // #[clap(about, version)]
@@ -189,18 +189,24 @@ mod list;
 
 #[derive(Subcommand, Debug)]
 enum PluginVersionCommand {
-  /// Add an entry for a local plugin manifest file to the repository file
-  File { repository_file: String, file: String },
+    /// Add an entry for a local plugin manifest file to the repository file
+    File {
+        repository_file: String,
+        file: String,
+    },
 
-  /// Add an entry for a GitHub Release to the repository file
-  GitHub { repository_file: String, url: String }
+    /// Add an entry for a GitHub Release to the repository file
+    GitHub {
+        repository_file: String,
+        url: String,
+    },
 }
 
 /// Installation source to fetch plugins files from
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub enum InstallationSource {
-  /// Install the plugin from a Github release page.
-  Github
+    /// Install the plugin from a Github release page.
+    Github,
 }
 
 // impl FromStr for InstallationSource {
@@ -250,188 +256,263 @@ pub enum InstallationSource {
 //   })
 // }
 
-pub fn run(args:&ArgMatches) -> Result<(), ExitCode> {
-  let log_level: Level = if args.get_flag("trace") == true {  
-    Level::TRACE
-  } else if args.get_flag("debug") == true{
-    Level::DEBUG
-  } else {
-    Level::WARN
-  };
-  let subscriber = FmtSubscriber::builder()
-    .with_max_level(log_level)
-    .finish();
+pub fn run(args: &ArgMatches) -> Result<(), ExitCode> {
+    let log_level: Level = if args.get_flag("trace") == true {
+        Level::TRACE
+    } else if args.get_flag("debug") == true {
+        Level::DEBUG
+    } else {
+        Level::WARN
+    };
+    let subscriber = FmtSubscriber::builder().with_max_level(log_level).finish();
 
-  if let Err(err) = tracing::subscriber::set_global_default(subscriber) {
-    eprintln!("WARN: Failed to initialise global tracing subscriber - {err}");
-  };
+    if let Err(err) = tracing::subscriber::set_global_default(subscriber) {
+        eprintln!("WARN: Failed to initialise global tracing subscriber - {err}");
+    };
 
-  let result = match args.subcommand() {
-    
-    Some(("list", args)) => list_plugins(args),
-    Some(("env", _)) => print_env(),
-    Some(("install", args)) => install::install_plugin(
-      args.get_one::<String>("source").unwrap(), 
-      &Some(args.get_one::<InstallationSource>("source_type").unwrap().clone()), 
-      args.get_flag("yes"), 
-      args.get_flag("skip_if_installed"), 
-      &Some(args.get_one::<String>("version").unwrap().clone())
-    ),
-    Some(("remove", args)) => remove_plugin(args.get_one::<String>("name").unwrap(), &Some(args.get_one::<String>("version").unwrap().clone()),args.get_flag("yes")),
-    Some(("enable", args)) => enable_plugin(args.get_one::<String>("name").unwrap(), &Some(args.get_one::<String>("version").unwrap().clone())),
-    Some(("disable", args)) => disable_plugin(args.get_one::<String>("name").unwrap(), &Some(args.get_one::<String>("version").unwrap().clone())),
-    Some(("repository", args)) => repository::handle_command(args),
-    None => unimplemented!("Handle empty ArgMatches case"), 
-    Some((&_, _)) => unimplemented!("Handle unknown subcommand case")   
-    // Commands::List(command) => list_plugins(command),
-    // Commands::Env => print_env(),
-    // Commands::Install { yes, skip_if_installed, source, source_type, version } => {
-    //   install::install_plugin(source, source_type, *yes || cli.yes, *skip_if_installed, version)
-    // },
-    // Commands::Remove { yes, name, version } => remove_plugin(name, version, *yes || cli.yes),
-    // Commands::Enable { name, version } => enable_plugin(name, version),
-    // Commands::Disable { name, version } => disable_plugin(name, version),
-    // Commands::Repository(command) => repository::handle_command(command)
-  };
+    let result = match args.subcommand() {
+        Some(("list", args)) => list_plugins(args),
+        Some(("env", _)) => print_env(),
+        Some(("install", args)) => install::install_plugin(
+            args.get_one::<String>("source").unwrap(),
+            &args
+                .get_one::<InstallationSource>("source_type")
+                .map(|st| st.clone()),
+            args.get_flag("yes"),
+            args.get_flag("skip_if_installed"),
+            args.get_one::<Option<String>>("version").unwrap_or(&None),
+        ),
+        Some(("remove", args)) => remove_plugin(
+            args.get_one::<String>("name").unwrap(),
+            &args
+                .get_one::<String>("version")
+                .map(|version| version.to_string()),
+            args.get_flag("yes"),
+        ),
+        Some(("enable", args)) => enable_plugin(
+            args.get_one::<String>("name").unwrap(),
+            &args
+                .get_one::<String>("version")
+                .map(|version| version.to_string()),
+        ),
+        Some(("disable", args)) => disable_plugin(
+            args.get_one::<String>("name").unwrap(),
+            &args
+                .get_one::<String>("version")
+                .map(|version| version.to_string()),
+        ),
+        Some(("repository", args)) => repository::handle_command(args),
+        None => unimplemented!("Handle empty ArgMatches case"),
+        Some((&_, _)) => unimplemented!("Handle unknown subcommand case"), // Commands::List(command) => list_plugins(command),
+                                                                           // Commands::Env => print_env(),
+                                                                           // Commands::Install { yes, skip_if_installed, source, source_type, version } => {
+                                                                           //   install::install_plugin(source, source_type, *yes || cli.yes, *skip_if_installed, version)
+                                                                           // },
+                                                                           // Commands::Remove { yes, name, version } => remove_plugin(name, version, *yes || cli.yes),
+                                                                           // Commands::Enable { name, version } => enable_plugin(name, version),
+                                                                           // Commands::Disable { name, version } => disable_plugin(name, version),
+                                                                           // Commands::Repository(command) => repository::handle_command(command)
+    };
 
-  result.map_err(|err| {
-    error!("error - {}", err);
-    ExitCode::FAILURE
-  })
+    result.map_err(|err| {
+        error!("error - {}", err);
+        ExitCode::FAILURE
+    })
 }
 
-fn remove_plugin(name: &String, version: &Option<String>, override_prompt: bool) -> anyhow::Result<()> {
-  let matches = find_plugin(name, version)?;
-  if matches.len() == 1 {
-    if let Some((manifest, _, _)) = matches.first() {
-      if override_prompt || prompt_delete(manifest) {
-        fs::remove_dir_all(manifest.plugin_dir.clone())?;
-        println!("Removed plugin with name '{}' and version '{}'", manifest.name, manifest.version);
-      } else {
-        println!("Aborting deletion of plugin.");
-      }
-      Ok(())
+fn remove_plugin(
+    name: &String,
+    version: &Option<String>,
+    override_prompt: bool,
+) -> anyhow::Result<()> {
+    let matches = find_plugin(name, version)?;
+    if matches.len() == 1 {
+        if let Some((manifest, _, _)) = matches.first() {
+            if override_prompt || prompt_delete(manifest) {
+                fs::remove_dir_all(manifest.plugin_dir.clone())?;
+                println!(
+                    "Removed plugin with name '{}' and version '{}'",
+                    manifest.name, manifest.version
+                );
+            } else {
+                println!("Aborting deletion of plugin.");
+            }
+            Ok(())
+        } else {
+            Err(anyhow!(
+                "Internal error, matches.len() == 1 but first() == None"
+            ))
+        }
+    } else if matches.len() > 1 {
+        Err(anyhow!(
+            "There is more than one plugin version for '{}', please also provide the version",
+            name
+        ))
+    } else if let Some(version) = version {
+        Err(anyhow!(
+            "Did not find a plugin with name '{}' and version '{}'",
+            name,
+            version
+        ))
     } else {
-      Err(anyhow!("Internal error, matches.len() == 1 but first() == None"))
+        Err(anyhow!("Did not find a plugin with name '{}'", name))
     }
-  } else if matches.len() > 1 {
-    Err(anyhow!("There is more than one plugin version for '{}', please also provide the version", name))
-  } else if let Some(version) = version {
-    Err(anyhow!("Did not find a plugin with name '{}' and version '{}'", name, version))
-  } else {
-    Err(anyhow!("Did not find a plugin with name '{}'", name))
-  }
 }
 
 fn prompt_delete(manifest: &PactPluginManifest) -> bool {
-  let question = requestty::Question::confirm("delete_plugin")
-    .message(format!("Are you sure you want to delete plugin with name '{}' and version '{}'?", manifest.name, manifest.version))
-    .default(false)
-    .on_esc(OnEsc::Terminate)
-    .build();
-  if let Ok(result) = requestty::prompt_one(question) {
-    if let Some(result) = result.as_bool() {
-      result
+    let question = requestty::Question::confirm("delete_plugin")
+        .message(format!(
+            "Are you sure you want to delete plugin with name '{}' and version '{}'?",
+            manifest.name, manifest.version
+        ))
+        .default(false)
+        .on_esc(OnEsc::Terminate)
+        .build();
+    if let Ok(result) = requestty::prompt_one(question) {
+        if let Some(result) = result.as_bool() {
+            result
+        } else {
+            false
+        }
     } else {
-      false
+        false
     }
-  } else {
-    false
-  }
 }
 
 fn disable_plugin(name: &String, version: &Option<String>) -> anyhow::Result<()> {
-  let matches = find_plugin(name, version)?;
-  if matches.len() == 1 {
-    if let Some((manifest, file, status)) = matches.first() {
-      if !*status {
-        println!("Plugin '{}' with version '{}' is already disabled.", manifest.name, manifest.version);
-      } else {
-        fs::rename(file, file.with_file_name("pact-plugin.json.disabled"))?;
-        println!("Plugin '{}' with version '{}' is now disabled.", manifest.name, manifest.version);
-      }
-      Ok(())
+    let matches = find_plugin(name, version)?;
+    if matches.len() == 1 {
+        if let Some((manifest, file, status)) = matches.first() {
+            if !*status {
+                println!(
+                    "Plugin '{}' with version '{}' is already disabled.",
+                    manifest.name, manifest.version
+                );
+            } else {
+                fs::rename(file, file.with_file_name("pact-plugin.json.disabled"))?;
+                println!(
+                    "Plugin '{}' with version '{}' is now disabled.",
+                    manifest.name, manifest.version
+                );
+            }
+            Ok(())
+        } else {
+            Err(anyhow!(
+                "Internal error, matches.len() == 1 but first() == None"
+            ))
+        }
+    } else if matches.len() > 1 {
+        Err(anyhow!(
+            "There is more than one plugin version for '{}', please also provide the version",
+            name
+        ))
+    } else if let Some(version) = version {
+        Err(anyhow!(
+            "Did not find a plugin with name '{}' and version '{}'",
+            name,
+            version
+        ))
     } else {
-      Err(anyhow!("Internal error, matches.len() == 1 but first() == None"))
+        Err(anyhow!("Did not find a plugin with name '{}'", name))
     }
-  } else if matches.len() > 1 {
-    Err(anyhow!("There is more than one plugin version for '{}', please also provide the version", name))
-  } else if let Some(version) = version {
-    Err(anyhow!("Did not find a plugin with name '{}' and version '{}'", name, version))
-  } else {
-    Err(anyhow!("Did not find a plugin with name '{}'", name))
-  }
 }
 
-fn find_plugin(name: &String, version: &Option<String>) -> anyhow::Result<Vec<(PactPluginManifest, PathBuf, bool)>> {
-  let vec = plugin_list()?;
-  Ok(vec.iter()
-    .filter(|(manifest, _, _)| {
-      if let Some(version) = version {
-        manifest.name == *name && manifest.version == *version
-      } else {
-        manifest.name == *name
-      }
-    })
-    .map(|(m, p, s)| {
-      (m.clone(), p.clone(), *s)
-    })
-    .collect_vec())
+fn find_plugin(
+    name: &String,
+    version: &Option<String>,
+) -> anyhow::Result<Vec<(PactPluginManifest, PathBuf, bool)>> {
+    let vec = plugin_list()?;
+    Ok(vec
+        .iter()
+        .filter(|(manifest, _, _)| {
+            if let Some(version) = version {
+                manifest.name == *name && manifest.version == *version
+            } else {
+                manifest.name == *name
+            }
+        })
+        .map(|(m, p, s)| (m.clone(), p.clone(), *s))
+        .collect_vec())
 }
 
 fn enable_plugin(name: &String, version: &Option<String>) -> anyhow::Result<()> {
-  let matches = find_plugin(name, version)?;
-  if matches.len() == 1 {
-    if let Some((manifest, file, status)) = matches.first() {
-      if *status {
-        println!("Plugin '{}' with version '{}' is already enabled.", manifest.name, manifest.version);
-      } else {
-        fs::rename(file, file.with_file_name("pact-plugin.json"))?;
-        println!("Plugin '{}' with version '{}' is now enabled.", manifest.name, manifest.version);
-      }
-      Ok(())
+    let matches = find_plugin(name, version)?;
+    if matches.len() == 1 {
+        if let Some((manifest, file, status)) = matches.first() {
+            if *status {
+                println!(
+                    "Plugin '{}' with version '{}' is already enabled.",
+                    manifest.name, manifest.version
+                );
+            } else {
+                fs::rename(file, file.with_file_name("pact-plugin.json"))?;
+                println!(
+                    "Plugin '{}' with version '{}' is now enabled.",
+                    manifest.name, manifest.version
+                );
+            }
+            Ok(())
+        } else {
+            Err(anyhow!(
+                "Internal error, matches.len() == 1 but first() == None"
+            ))
+        }
+    } else if matches.len() > 1 {
+        Err(anyhow!(
+            "There is more than one plugin version for '{}', please also provide the version",
+            name
+        ))
+    } else if let Some(version) = version {
+        Err(anyhow!(
+            "Did not find a plugin with name '{}' and version '{}'",
+            name,
+            version
+        ))
     } else {
-      Err(anyhow!("Internal error, matches.len() == 1 but first() == None"))
+        Err(anyhow!("Did not find a plugin with name '{}'", name))
     }
-  } else if matches.len() > 1 {
-    Err(anyhow!("There is more than one plugin version for '{}', please also provide the version", name))
-  } else if let Some(version) = version {
-    Err(anyhow!("Did not find a plugin with name '{}' and version '{}'", name, version))
-  } else {
-    Err(anyhow!("Did not find a plugin with name '{}'", name))
-  }
 }
 
 fn print_env() -> anyhow::Result<()> {
-  let mut table = Table::new();
+    let mut table = Table::new();
 
-  let (plugin_src, plugin_dir) = resolve_plugin_dir();
+    let (plugin_src, plugin_dir) = resolve_plugin_dir();
 
-  table
-    .load_preset(UTF8_FULL)
-    .set_header(vec!["Configuration", "Source", "Value"])
-    .add_row(vec!["Plugin Directory", plugin_src.as_str(), plugin_dir.as_str()]);
+    table
+        .load_preset(UTF8_FULL)
+        .set_header(vec!["Configuration", "Source", "Value"])
+        .add_row(vec![
+            "Plugin Directory",
+            plugin_src.as_str(),
+            plugin_dir.as_str(),
+        ]);
 
-  println!("{table}");
+    println!("{table}");
 
-  Ok(())
+    Ok(())
 }
 
 fn resolve_plugin_dir() -> (String, String) {
-  let home_dir = home::home_dir()
-    .map(|dir| dir.join(".pact/plugins"))
-    .unwrap_or_default();
-  match env::var_os("PACT_PLUGIN_DIR") {
-    None => ("$HOME/.pact/plugins".to_string(), home_dir.display().to_string()),
-    Some(dir) => {
-      let plugin_dir = dir.to_string_lossy();
-      if plugin_dir.is_empty() {
-        ("$HOME/.pact/plugins".to_string(), home_dir.display().to_string())
-      } else {
-        ("$PACT_PLUGIN_DIR".to_string(), plugin_dir.to_string())
-      }
+    let home_dir = home::home_dir()
+        .map(|dir| dir.join(".pact/plugins"))
+        .unwrap_or_default();
+    match env::var_os("PACT_PLUGIN_DIR") {
+        None => (
+            "$HOME/.pact/plugins".to_string(),
+            home_dir.display().to_string(),
+        ),
+        Some(dir) => {
+            let plugin_dir = dir.to_string_lossy();
+            if plugin_dir.is_empty() {
+                (
+                    "$HOME/.pact/plugins".to_string(),
+                    home_dir.display().to_string(),
+                )
+            } else {
+                ("$PACT_PLUGIN_DIR".to_string(), plugin_dir.to_string())
+            }
+        }
     }
-  }
 }
 
 #[cfg(test)]

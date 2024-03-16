@@ -36,12 +36,12 @@ jobs:
         ./pact_cli plugin enable --help
         ./pact_cli plugin disable --help
         ./pact_cli plugin repository --help
-        ./pact_cli plugin validate --help
-        ./pact_cli plugin new --help
-        ./pact_cli plugin add-plugin-version --help
-        ./pact_cli plugin add-plugin-version git-hub --help
-        ./pact_cli plugin add-plugin-version file --help
-        ./pact_cli plugin add-all-plugin-versions --help
-        ./pact_cli plugin yank-version --help
-        ./pact_cli plugin list --help
-        ./pact_cli plugin list-versions --help
+        ./pact_cli plugin repository validate --help
+        ./pact_cli plugin repository new --help
+        ./pact_cli plugin repository add-plugin-version --help
+        ./pact_cli plugin repository add-plugin-version git-hub --help
+        ./pact_cli plugin repository add-plugin-version file --help
+        ./pact_cli plugin repository add-all-plugin-versions --help
+        ./pact_cli plugin repository yank-version --help
+        ./pact_cli plugin repository list --help
+        ./pact_cli plugin repository list-versions --help

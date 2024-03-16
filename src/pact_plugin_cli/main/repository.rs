@@ -21,23 +21,25 @@ use pact_plugin_driver::repository::{
 
 use super::install::{fetch_json_from_url, json_to_string};
 use super::repository::ManifestSource::GitHubRelease;
-use super::{PluginVersionCommand};
+use super::PluginVersionCommand;
 
 pub(crate) const DEFAULT_INDEX: &str = include_str!("../repository.index");
 
 pub(crate) fn handle_command(command: &ArgMatches) -> anyhow::Result<()> {
     match command.subcommand() {
-        Some(("validate", args)) => {
-            validate_repository_file(args.get_one::<String>("filename").unwrap())
-        }
+        Some(("validate", args)) => validate_repository_file(
+            args.try_get_one::<String>("filename")
+                .unwrap()
+                .expect("filename must be set"),
+        ),
         Some(("new", args)) => new_repository(
-            &Some(args.get_one::<String>("filename").unwrap().to_string()),
+            args.get_one::<Option<String>>("filename").unwrap_or(&None),
             *args.get_one::<bool>("overwrite").unwrap(),
         ),
         Some(("add-plugin-version", args)) => handle_add_plugin_command(args),
         Some(("add-all-plugin-versions", args)) => handle_add_all_versions(
             args.get_one::<String>("repository_file").unwrap(),
-            &Some(args.get_one::<String>("base_url").unwrap().to_string()),
+            args.get_one::<Option<String>>("base_url").unwrap_or(&None),
             args.get_one::<String>("owner").unwrap(),
             args.get_one::<String>("repository").unwrap(),
         ),
@@ -173,12 +175,15 @@ fn validate_repository_file(filename: &String) -> anyhow::Result<()> {
 
 fn handle_add_plugin_command(command: &ArgMatches) -> anyhow::Result<()> {
     match command.subcommand() {
-        Some(("file",
-            args))
-         => {
-          
-            let repository_file = validate_filename(args.get_one::<String>("repository_file").unwrap(), "Repository")?;
-            let file = validate_filename(args.get_one::<String>("name").unwrap(), "Plugin manifest file")?;
+        Some(("file", args)) => {
+            let repository_file = validate_filename(
+                args.get_one::<String>("repository_file").unwrap(),
+                "Repository",
+            )?;
+            let file = validate_filename(
+                args.get_one::<String>("name").unwrap(),
+                "Plugin manifest file",
+            )?;
             let f = File::open(&file)?;
             let reader = BufReader::new(f);
             let manifest: PactPluginManifest = serde_json::from_reader(reader)?;
@@ -191,10 +196,11 @@ fn handle_add_plugin_command(command: &ArgMatches) -> anyhow::Result<()> {
             )?;
             Ok(())
         }
-        Some(("git-hub",
-            args))
-         => {
-            let repository_file = validate_filename(args.get_one::<String>("repository_file").unwrap(), "Repository")?;
+        Some(("git-hub", args)) => {
+            let repository_file = validate_filename(
+                args.get_one::<String>("repository_file").unwrap(),
+                "Repository",
+            )?;
             let url = args.get_one::<String>("url").unwrap();
             let mut index = load_index_file(&repository_file)?;
             let manifest = download_manifest_from_github(url)

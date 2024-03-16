@@ -20,7 +20,7 @@ use super::repository::{APP_USER_AGENT, DEFAULT_INDEX};
 pub fn list_plugins(command: &ArgMatches) -> anyhow::Result<()> {
   match command.subcommand() {
     Some(("installed", _)) => list_installed_plugins(),
-    Some(("known", args)) => list_known_plugins(args.get_one::<bool>("show_all_versions").unwrap()),
+    Some(("known", args)) => list_known_plugins(&args.get_flag("show_all_versions")),
     Some((&_, _)) => Err(anyhow!("unrecognized subcommand is shown")),
     None => Err(anyhow!("help is shown by default")), 
   }
