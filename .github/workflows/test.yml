@@ -187,7 +187,7 @@ jobs:
         with:
           target: x86_64-unknown-linux-gnu
           toolchain: nightly
-        if: ${{ matrix.job.target == 'aarch64-unknown-freebsd'}}
+        if: ${{ matrix.job.target == 'aarch64-unknown-freebsd'}} || ${{ matrix.job.target == 'x86_64-unknown-freebsd'}}
       - name: set MACOSX_DEPLOYMENT_TARGET to 10.9 for x86_64-apple-darwin (mavericks)
         if: ${{ matrix.job.target == 'x86_64-apple-darwin' }}
         run: echo "MACOSX_DEPLOYMENT_TARGET=10.9" >> $GITHUB_ENV
