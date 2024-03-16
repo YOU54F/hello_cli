@@ -1684,7 +1684,7 @@ checksum = "ff011a302c396a5197692431fc1948019154afc178baf7d8e37367442a4601cf"
 [[package]]
 name = "os_info"
 version = "3.8.0"
-source = "git+https://github.com/yonasBSD/os_info.git?branch=yonas-patch-1#83fc5679e4d8a24d99c47e5fa73d2180c3ce7dbb"
+source = "git+https://github.com/you54f/os_info.git#3dc4da39b136706a8b7bb075316efc2e26bdb5fb"
 dependencies = [
  "log",
  "serde",

@@ -82,7 +82,8 @@ trycmd = "0.15.0"
 
 [patch.crates-io]
 # https://github.com/stanislav-tkach/os_info/issues/370
-os_info = { git = 'https://github.com/yonasBSD/os_info.git', branch='yonas-patch-1' }
+os_info = { git = 'https://github.com/you54f/os_info.git' }
+# os_info = { git = 'https://github.com/yonasBSD/os_info.git', branch='yonas-patch-1' }
 
 [profile.release]
 strip = true      # Automatically strip symbols from the binary.
