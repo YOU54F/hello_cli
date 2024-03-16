@@ -1057,7 +1057,9 @@ Options:
 
 ```console
 $ pact_cli plugin install --help
-Install a plugin
+Install a plugin 
+
+A plugin can be either installed from a URL, or for a known plugin, by name (and optionally version)
 
 Usage: pact_cli plugin install [OPTIONS] <SOURCE>
 
@@ -1065,16 +1067,11 @@ Arguments:
   <SOURCE>  Where to fetch the plugin files from. This should be a URL or the name of a known plugin.
 
 Options:
-  -t, --source-type <SOURCE_TYPE>
-          The type of source to fetch the plugin files from. Will default to Github releases. [possible values: github]
-  -y, --yes <yes>
-          Automatically answer Yes for all prompts
-  -s, --skip-if-installed <skip_if_installed>
-          Skip installing the plugin if the same version is already installed
-  -v, --version <VERSION>
-          The version to install. This is only used for known plugins.
-  -h, --help
-          Print help
+  -t, --source-type <SOURCE_TYPE>  The type of source to fetch the plugin files from. Will default to Github releases. [possible values: github]
+  -y, --yes                        Automatically answer Yes for all prompts
+  -s, --skip-if-installed          Skip installing the plugin if the same version is already installed
+  -v, --version <VERSION>          The version to install. This is only used for known plugins.
+  -h, --help                       Print help
 
 ```
 
@@ -1082,15 +1079,15 @@ Options:
 $ pact_cli plugin remove --help
 Remove a plugin
 
-Usage: pact_cli plugin remove [OPTIONS] <name> [VERSION]
+Usage: pact_cli plugin remove [OPTIONS] <NAME> [VERSION]
 
 Arguments:
-  <name>     Plugin name
+  <NAME>     Plugin name
   [VERSION]  Plugin version. Not required if there is only one plugin version.
 
 Options:
-  -y, --yes <yes>  Automatically answer Yes for all prompts
-  -h, --help       Print help
+  -y, --yes   Automatically answer Yes for all prompts
+  -h, --help  Print help
 
 ```
 
@@ -1149,10 +1146,10 @@ Options:
 $ pact_cli plugin repository validate --help
 Check the consistency of the repository index file
 
-Usage: pact_cli plugin repository validate [filename]
+Usage: pact_cli plugin repository validate <FILENAME>
 
 Arguments:
-  [filename]  Filename to validate
+  <FILENAME>  Filename to validate
 
 Options:
   -h, --help  Print help
@@ -1163,12 +1160,14 @@ Options:
 $ pact_cli plugin repository new --help
 Create a new blank repository index file
 
-Usage: pact_cli plugin repository new [OPTIONS]
+Usage: pact_cli plugin repository new [OPTIONS] [FILENAME]
+
+Arguments:
+  [FILENAME]  Filename to use for the new file. By default will use repository.index
 
 Options:
-      --filename <filename>  Filename to validate
-      --overwrite             Overwrite any existing file?
-  -h, --help                 Print help
+  -o, --overwrite   Overwrite any existing file?
+  -h, --help       Print help
 
 ```
 
@@ -1176,11 +1175,11 @@ Options:
 $ pact_cli plugin repository add-plugin-version --help
 Add a plugin version to the index file (will update existing entry)
 
-Usage: pact_cli plugin repository add-plugin-version [COMMAND]
+Usage: pact_cli plugin repository add-plugin-version <COMMAND>
 
 Commands:
-  git-hub  Add an entry for a GitHub Release to the repository file
   file     Add an entry for a local plugin manifest file to the repository file
+  git-hub  Add an entry for a GitHub Release to the repository file
   help     Print this message or the help of the given subcommand(s)
 
 Options:
@@ -1207,11 +1206,11 @@ Options:
 $ pact_cli plugin repository add-plugin-version file --help
 Add an entry for a local plugin manifest file to the repository file
 
-Usage: pact_cli plugin repository add-plugin-version file <REPOSITORY_FILE> <URL>
+Usage: pact_cli plugin repository add-plugin-version file <REPOSITORY_FILE> <FILE>
 
 Arguments:
   <REPOSITORY_FILE>  Repository index file to update
-  <URL>              Base URL for GitHub APIs, will default to https://api.github.com/repos/
+  <FILE>             Path to the local plugin manifest file
 
 Options:
   -h, --help  Print help
@@ -1222,13 +1221,13 @@ Options:
 $ pact_cli plugin repository add-all-plugin-versions --help
 Add all versions of a plugin to the index file (will update existing entries)
 
-Usage: pact_cli plugin repository add-all-plugin-versions <REPOSITORY_FILE> <OWNER> <REPOSITORY> [base_url]
+Usage: pact_cli plugin repository add-all-plugin-versions <REPOSITORY_FILE> <OWNER> <REPOSITORY> [BASE_URL]
 
 Arguments:
   <REPOSITORY_FILE>  Repository index file to update
   <OWNER>            Repository owner to load versions from
   <REPOSITORY>       Repository to load versions from
-  [base_url]         Base URL for GitHub APIs, will default to https://api.github.com/repos/
+  [BASE_URL]         Base URL for GitHub APIs, will default to https://api.github.com/repos/
 
 Options:
   -h, --help  Print help

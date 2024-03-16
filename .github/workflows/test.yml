@@ -21,16 +21,8 @@ jobs:
       fail-fast: false
       matrix:
         job:
-          - {
-              target: x86_64-apple-darwin,
-              os: macos-14,
-              use-cross: false
-            }
-          - {
-              target: aarch64-apple-darwin,
-              os: macos-14,
-              use-cross: false
-            }
+          - { target: x86_64-apple-darwin, os: macos-14, use-cross: false }
+          - { target: aarch64-apple-darwin, os: macos-14, use-cross: false }
           - {
               target: x86_64-unknown-linux-gnu,
               os: ubuntu-latest,
@@ -141,16 +133,8 @@ jobs:
               os: ubuntu-latest,
               use-cross: true
             }
-          - {
-              target: i686-linux-android,
-              os: ubuntu-latest,
-              use-cross: true
-            }
-          - {
-              target: x86_64-linux-android,
-              os: ubuntu-latest,
-              use-cross: true
-            }
+          - { target: i686-linux-android, os: ubuntu-latest, use-cross: true }
+          - { target: x86_64-linux-android, os: ubuntu-latest, use-cross: true }
           - {
               target: thumbv7neon-linux-androideabi,
               os: ubuntu-latest,
@@ -214,8 +198,8 @@ jobs:
       - name: Build with cross
         if: ${{ matrix.job.use-cross == true }}
         run: |
-          if [[ ${{ matrix.job.target }} == *"android"* ]] || [[ ${{ matrix.job.target }} == "x86_64-unknown-netbsd" ]] || [[ ${{ matrix.job.target }} == "x86_64-pc-windows-gnu" ]]; then
-            echo "Android target detected"
+          if [[ ${{ matrix.job.target }} == *"android"* ]] || [[ ${{ matrix.job.target }} == "x86_64-unknown-netbsd" ]] || [[ ${{ matrix.job.target }} == "x86_64-pc-windows-gnu" ]] || [[ ${{ matrix.job.target }} == "i586-unknown-linux-gnu" ]]; then
+            echo "installing latest cross"
             cargo install cross --git https://github.com/cross-rs/cross
           else
             cargo install cross@0.2.5

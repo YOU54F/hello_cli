@@ -26,6 +26,7 @@ jobs:
         ./pact_cli pact-broker --help
         ./pact_cli pactflow --help
         ./pact_cli completions --help
+        ./pact_cli docker --help
         ./pact_cli plugin --help
         ./pact_cli plugin list --help
         ./pact_cli plugin list installed --help
@@ -45,3 +46,12 @@ jobs:
         ./pact_cli plugin repository yank-version --help
         ./pact_cli plugin repository list --help
         ./pact_cli plugin repository list-versions --help
+        ./pact_cli stub --help
+        ./pact_cli verifier --help
+        ./pact_cli mock --help
+        ./pact_cli mock start --help
+        ./pact_cli mock list --help
+        ./pact_cli mock create --help
+        ./pact_cli mock verify --help
+        ./pact_cli mock shutdown --help
+        ./pact_cli mock shutdown-master --help
