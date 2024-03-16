@@ -3,7 +3,7 @@ name: Rust
 on:
   workflow_dispatch:
   push:
-    branches: [ "test" ]
+    branches: [ "test", "broker_test" ]
   pull_request:
     branches: [ "main" ]
 
@@ -55,3 +55,7 @@ jobs:
         ./pact_cli mock verify --help
         ./pact_cli mock shutdown --help
         ./pact_cli mock shutdown-master --help
+        ./pact_cli standalone --help
+    - name: Run broker
+      run: |
+        ./pact_cli standalone
