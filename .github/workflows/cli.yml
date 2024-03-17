@@ -118,4 +118,4 @@ jobs:
       if: matrix.os == 'windows-latest'
       shell: cmd
       run: |
-        ./pact-broker-app.exe
+        pact-broker-app.exe
