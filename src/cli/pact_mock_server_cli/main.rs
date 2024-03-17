@@ -12,210 +12,242 @@ use std::str::FromStr;
 use std::sync::Mutex;
 
 use anyhow::anyhow;
-use clap::ArgMatches;
-use clap::{Arg, ArgAction, command, Command};
 use clap::error::ErrorKind;
+use clap::ArgMatches;
+use clap::{command, Arg, ArgAction, Command};
 use lazy_static::*;
 use pact_models::PactSpecification;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
+use tracing::error;
 use tracing_core::LevelFilter;
 use tracing_subscriber::fmt::writer::MakeWriterExt;
 use tracing_subscriber::FmtSubscriber;
 use uuid::Uuid;
-use tracing::error;
 
 use pact_mock_server::server_manager::ServerManager;
 
-pub(crate) fn display_error(error: String, usage: &str) -> (std::string::String, &str){
-  eprintln!("ERROR: {}", error);
-  eprintln!();
-  eprintln!("{}", usage);
-  ("foo".to_string(), "bar")
- 
+pub(crate) fn display_error(error: String, usage: &str) -> (std::string::String, &str) {
+    eprintln!("ERROR: {}", error);
+    eprintln!();
+    eprintln!("{}", usage);
+    ("foo".to_string(), "bar")
 }
 // std::string::String, &str)
 pub(crate) fn handle_error(error: &str) -> i32 {
-  eprintln!("ERROR: {}", error);
-  eprintln!();
-  -100
+    eprintln!("ERROR: {}", error);
+    eprintln!();
+    -100
 }
 
-mod server;
 mod create_mock;
 mod list;
-mod verify;
+mod server;
 mod shutdown;
+mod verify;
 
 pub fn print_version() {
     println!("pact mock server version  : v{}", clap::crate_version!());
-    println!("pact specification version: v{}", PactSpecification::V4.version_str());
+    println!(
+        "pact specification version: v{}",
+        PactSpecification::V4.version_str()
+    );
 }
 
 fn setup_loggers(
-  level: &str,
-  command: &str,
-  output: Option<&str>,
-  no_file_log: bool,
-  no_term_log: bool
+    level: &str,
+    command: &str,
+    output: Option<&str>,
+    no_file_log: bool,
+    no_term_log: bool,
 ) -> anyhow::Result<()> {
-  let log_level = match level {
-    "none" => LevelFilter::OFF,
-    _ => LevelFilter::from_str(level).unwrap()
-  };
+    let log_level = match level {
+        "none" => LevelFilter::OFF,
+        _ => LevelFilter::from_str(level).unwrap(),
+    };
 
-  if command == "start" && !no_file_log {
-    let file_appender = tracing_appender::rolling::daily(output.unwrap_or("."), "pact_mock_server.log");
-    let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
-    let subscriber = FmtSubscriber::builder()
-      .with_max_level(log_level)
-      .with_writer(non_blocking.and(io::stdout))
-      .with_thread_names(true)
-      .with_ansi(!no_term_log)
-      .finish();
-    tracing::subscriber::set_global_default(subscriber)
-  } else {
-    let subscriber = FmtSubscriber::builder()
-      .with_max_level(log_level)
-      .with_thread_names(true)
-      .with_ansi(!no_term_log)
-      .finish();
-    tracing::subscriber::set_global_default(subscriber)
-  }.map_err(|err| anyhow!(err))
+    if command == "start" && !no_file_log {
+        let file_appender =
+            tracing_appender::rolling::daily(output.unwrap_or("."), "pact_mock_server.log");
+        let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
+        let subscriber = FmtSubscriber::builder()
+            .with_max_level(log_level)
+            .with_writer(non_blocking.and(io::stdout))
+            .with_thread_names(true)
+            .with_ansi(!no_term_log)
+            .finish();
+        tracing::subscriber::set_global_default(subscriber)
+    } else {
+        let subscriber = FmtSubscriber::builder()
+            .with_max_level(log_level)
+            .with_thread_names(true)
+            .with_ansi(!no_term_log)
+            .finish();
+        tracing::subscriber::set_global_default(subscriber)
+    }
+    .map_err(|err| anyhow!(err))
 }
 
 fn integer_value(v: &str) -> Result<u16, String> {
-  v.parse::<u16>().map_err(|e| format!("'{}' is not a valid port value: {}", v, e) )
+    v.parse::<u16>()
+        .map_err(|e| format!("'{}' is not a valid port value: {}", v, e))
 }
 
 fn uuid_value(v: &str) -> Result<Uuid, String> {
-  Uuid::parse_str(v).map_err(|e| format!("'{}' is not a valid UUID value: {}", v, e) )
+    Uuid::parse_str(v).map_err(|e| format!("'{}' is not a valid UUID value: {}", v, e))
 }
 
 #[tokio::main]
 async fn main() {
-  match handle_command_args().await {
-    Ok(_) => (),
-    Err(err) => std::process::exit(err)
-  }
+    match handle_command_args().await {
+        Ok(_) => (),
+        Err(err) => std::process::exit(err),
+    }
 }
 
 #[derive(Debug, Clone)]
 pub(crate) struct ServerOpts {
-  pub output_path: Option<String>,
-  pub base_port: Option<u16>,
-  pub server_key: String
+    pub output_path: Option<String>,
+    pub base_port: Option<u16>,
+    pub server_key: String,
 }
 
-lazy_static!{
-  pub(crate) static ref SERVER_OPTIONS: Mutex<RefCell<ServerOpts>> = Mutex::new(RefCell::new(ServerOpts {
-    output_path: None,
-    base_port: None,
-    server_key: String::default()
-  }));
-  pub(crate) static ref SERVER_MANAGER: Mutex<ServerManager> = Mutex::new(ServerManager::new());
+lazy_static! {
+    pub(crate) static ref SERVER_OPTIONS: Mutex<RefCell<ServerOpts>> =
+        Mutex::new(RefCell::new(ServerOpts {
+            output_path: None,
+            base_port: None,
+            server_key: String::default()
+        }));
+    pub(crate) static ref SERVER_MANAGER: Mutex<ServerManager> = Mutex::new(ServerManager::new());
 }
 
 pub async fn handle_command_args() -> Result<(), i32> {
-  let mut app = setup_args();
+    let mut app = setup_args();
 
-  let matches = app.try_get_matches();
-  match matches {
-    Ok(results) => handle_matches(&results).await,
-    Err(ref err) => {
-      match err.kind() {
-        ErrorKind::DisplayHelp => {
-          println!("{}", err);
-          Ok(())
+    let matches = app.try_get_matches();
+    match matches {
+        Ok(results) => handle_matches(&results).await,
+        Err(ref err) => match err.kind() {
+            ErrorKind::DisplayHelp => {
+                println!("{}", err);
+                Ok(())
+            }
+            ErrorKind::DisplayVersion => {
+                print_version();
+                println!();
+                Ok(())
+            }
+            _ => err.exit(),
         },
-        ErrorKind::DisplayVersion => {
-          print_version();
-          println!();
-          Ok(())
-        },
-        _ => {
-          err.exit()
-        }
-      }
     }
-  }
 }
 
 pub async fn handle_matches(matches: &ArgMatches) -> Result<(), i32> {
-  let usage: String = "todo - usage".to_string();
-  // let usage: String = app.render_usage().to_string();
-  let log_level = matches.get_one::<String>("loglevel").map(|lvl| lvl.as_str());
-  let no_file_log = matches.get_flag("no-file-log");
-  let no_term_log = matches.get_flag("no-term-log");
-  if let Err(err) = setup_loggers(log_level.unwrap_or("info"),
-    matches.subcommand_name().unwrap(),
-    matches.subcommand().map(|(name, args)| {
-      if name == "start" {
-        args.get_one::<String>("output").map(|o| o.as_str())
-      } else {
-        None
-      }
-    }).flatten(),
-    no_file_log,
-    no_term_log
-  ) {
-    eprintln!("WARN: Could not setup loggers: {}", err);
-    eprintln!();
-  }
+    let usage: String = "todo - usage".to_string();
+    // let usage: String = app.render_usage().to_string();
+    let log_level = matches
+        .get_one::<String>("loglevel")
+        .map(|lvl| lvl.as_str());
+    let no_file_log = matches.get_flag("no-file-log");
+    let no_term_log = matches.get_flag("no-term-log");
+    if let Err(err) = setup_loggers(
+        log_level.unwrap_or("info"),
+        matches.subcommand_name().unwrap(),
+        matches
+            .subcommand()
+            .map(|(name, args)| {
+                if name == "start" {
+                    args.get_one::<String>("output").map(|o| o.as_str())
+                } else {
+                    None
+                }
+            })
+            .flatten(),
+        no_file_log,
+        no_term_log,
+    ) {
+        eprintln!("WARN: Could not setup loggers: {}", err);
+        eprintln!();
+    }
 
-  let port = *matches.get_one::<u16>("port").unwrap_or(&8080);
-  let localhost = "localhost".to_string();
-  let host = matches.get_one::<String>("host").unwrap_or(&localhost);
+    let port = *matches.get_one::<u16>("port").unwrap_or(&8080);
+    let localhost = "localhost".to_string();
+    let host = matches.get_one::<String>("host").unwrap_or(&localhost);
 
-  match matches.subcommand() {
-    Some(("start", sub_matches)) => {
-      let output_path = sub_matches.get_one::<String>("output").map(|s| s.to_owned());
-      let base_port = sub_matches.get_one::<u16>("base-port").cloned();
-      let server_key = sub_matches.get_one::<String>("server-key").map(|s| s.to_owned())
-        .unwrap_or_else(|| rand::thread_rng().sample_iter(Alphanumeric).take(16).map(char::from).collect::<String>());
-      {
-        let inner = (*SERVER_OPTIONS).lock().unwrap();
-        let mut options = inner.deref().borrow_mut();
-        options.output_path = output_path;
-        options.base_port = base_port;
-        options.server_key = server_key;
-      }
-      server::start_server(port).await
-    },
-    Some(("list", _)) => list::list_mock_servers(host, port, usage.as_str()).await,
-    Some(("create", sub_matches)) => create_mock::create_mock_server(host, port, sub_matches, usage.as_str()).await,
-    Some(("verify", sub_matches)) => verify::verify_mock_server(host, port, sub_matches, usage.as_str()).await,
-    Some(("shutdown", sub_matches)) => shutdown::shutdown_mock_server(host, port, sub_matches, usage.as_str()).await,
-    Some(("shutdown-master", sub_matches)) => shutdown::shutdown_master_server(host, port, sub_matches, usage.as_str()).await,
-    _ => Err(3)
-  }
+    match matches.subcommand() {
+        Some(("start", sub_matches)) => {
+            let output_path = sub_matches
+                .get_one::<String>("output")
+                .map(|s| s.to_owned());
+            let base_port = sub_matches.get_one::<u16>("base-port").cloned();
+            let server_key = sub_matches
+                .get_one::<String>("server-key")
+                .map(|s| s.to_owned())
+                .unwrap_or_else(|| {
+                    rand::thread_rng()
+                        .sample_iter(Alphanumeric)
+                        .take(16)
+                        .map(char::from)
+                        .collect::<String>()
+                });
+            {
+                let inner = (*SERVER_OPTIONS).lock().unwrap();
+                let mut options = inner.deref().borrow_mut();
+                options.output_path = output_path;
+                options.base_port = base_port;
+                options.server_key = server_key;
+            }
+            server::start_server(port).await
+        }
+        Some(("list", _)) => list::list_mock_servers(host, port, usage.as_str()).await,
+        Some(("create", sub_matches)) => {
+            create_mock::create_mock_server(host, port, sub_matches, usage.as_str()).await
+        }
+        Some(("verify", sub_matches)) => {
+            verify::verify_mock_server(host, port, sub_matches, usage.as_str()).await
+        }
+        Some(("shutdown", sub_matches)) => {
+            shutdown::shutdown_mock_server(host, port, sub_matches, usage.as_str()).await
+        }
+        Some(("shutdown-master", sub_matches)) => {
+            shutdown::shutdown_master_server(host, port, sub_matches, usage.as_str()).await
+        }
+        _ => Err(3),
+    }
 }
 pub fn setup_args() -> Command {
-  #[allow(unused_mut)]
-  let mut create_command = Command::new("create")
-    .about("Creates a new mock server from a pact file")
-    .version(clap::crate_version!())
-    .arg(Arg::new("file")
-      .short('f')
-      .long("file")
-      .action(ArgAction::Set)
-      .required(true)
-      .help("the pact file to define the mock server"))
-    .arg(Arg::new("cors")
-      .short('c')
-      .long("cors-preflight")
-      .action(ArgAction::SetTrue)
-      .help("Handle CORS pre-flight requests"));
+    #[allow(unused_mut)]
+    let mut create_command = Command::new("create")
+        .about("Creates a new mock server from a pact file")
+        .version(clap::crate_version!())
+        .arg(
+            Arg::new("file")
+                .short('f')
+                .long("file")
+                .action(ArgAction::Set)
+                .required(true)
+                .help("the pact file to define the mock server"),
+        )
+        .arg(
+            Arg::new("cors")
+                .short('c')
+                .long("cors-preflight")
+                .action(ArgAction::SetTrue)
+                .help("Handle CORS pre-flight requests"),
+        );
 
-  #[cfg(feature = "tls")]
-  {
-    create_command = create_command.arg(Arg::new("tls")
-     .long("tls")
-     .action(ArgAction::SetTrue)
-     .help("Enable TLS with the mock server (will use a self-signed certificate)"));
-  }
+    #[cfg(feature = "tls")]
+    {
+        create_command = create_command.arg(
+            Arg::new("tls")
+                .long("tls")
+                .action(ArgAction::SetTrue)
+                .help("Enable TLS with the mock server (will use a self-signed certificate)"),
+        );
+    }
 
-  Command::new("mock")
+    Command::new("mock")
     .about("Standalone Pact mock server")
     .disable_help_flag(true)
     .arg_required_else_help(true)
@@ -340,19 +372,19 @@ pub fn setup_args() -> Command {
 
 #[cfg(test)]
 mod test {
-  use expectest::expect;
-  use expectest::prelude::*;
+    use expectest::expect;
+    use expectest::prelude::*;
 
-  use crate::cli::pact_mock_server_cli::main::{integer_value, setup_args};
+    use crate::cli::pact_mock_server_cli::main::{integer_value, setup_args};
 
-  #[test]
-  fn validates_integer_value() {
-      expect!(integer_value("1234")).to(be_ok());
-      expect!(integer_value("1234x")).to(be_err());
-  }
+    #[test]
+    fn validates_integer_value() {
+        expect!(integer_value("1234")).to(be_ok());
+        expect!(integer_value("1234x")).to(be_err());
+    }
 
-  #[test_log::test]
-  fn verify_cli() {
-    setup_args().debug_assert();
-  }
+    #[test_log::test]
+    fn verify_cli() {
+        setup_args().debug_assert();
+    }
 }

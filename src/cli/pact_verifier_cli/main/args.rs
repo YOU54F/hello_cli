@@ -1,37 +1,47 @@
-use clap::{Arg, ArgAction, ArgGroup, Command, command};
 use clap::builder::{NonEmptyStringValueParser, PossibleValuesParser};
+use clap::{command, Arg, ArgAction, ArgGroup, Command};
 use regex::Regex;
 // use crate::cli::pact_verifier_cli::main::get_version_info;
 fn port_value(v: &str) -> Result<u16, String> {
-  v.parse::<u16>().map_err(|e| format!("'{}' is not a valid port value: {}", v, e) )
+    v.parse::<u16>()
+        .map_err(|e| format!("'{}' is not a valid port value: {}", v, e))
 }
 
 fn integer_value(v: &str) -> Result<u64, String> {
-  v.parse::<u64>().map_err(|e| format!("'{}' is not a valid integer value: {}", v, e) )
+    v.parse::<u64>()
+        .map_err(|e| format!("'{}' is not a valid integer value: {}", v, e))
 }
 
 fn validate_regex(val: &str) -> Result<String, String> {
-  if val.is_empty() {
-    Err("filter value can not be empty".to_string())
-  } else {
-    Regex::new(val)
-      .map(|_| val.to_string())
-      .map_err(|err| format!("'{}' is an invalid filter value: {}", val, err))
-  }
+    if val.is_empty() {
+        Err("filter value can not be empty".to_string())
+    } else {
+        Regex::new(val)
+            .map(|_| val.to_string())
+            .map_err(|err| format!("'{}' is an invalid filter value: {}", val, err))
+    }
 }
 
 fn transport_value(v: &str) -> Result<(String, u16), String> {
-  let (transport, port) = v.split_once(':')
-    .ok_or_else(|| format!("'{}' is not a valid transport, it must be in the form TRANSPORT:PORT", v))?;
-  if transport.is_empty() {
-    return Err(format!("'{}' is not a valid transport, the transport part is empty", v));
-  }
-  port.parse::<u16>().map(|port| (transport.to_string(), port))
-    .map_err(|e| format!("'{}' is not a valid port value: {}", port, e) )
+    let (transport, port) = v.split_once(':').ok_or_else(|| {
+        format!(
+            "'{}' is not a valid transport, it must be in the form TRANSPORT:PORT",
+            v
+        )
+    })?;
+    if transport.is_empty() {
+        return Err(format!(
+            "'{}' is not a valid transport, the transport part is empty",
+            v
+        ));
+    }
+    port.parse::<u16>()
+        .map(|port| (transport.to_string(), port))
+        .map_err(|e| format!("'{}' is not a valid port value: {}", port, e))
 }
 
 pub(crate) fn setup_app() -> Command {
-  Command::new("verifier")
+    Command::new("verifier")
   // .long_version(
   //   get_version_info("0.0.3")
   // )
