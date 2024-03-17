@@ -112,5 +112,6 @@ jobs:
       run: |
         curl -LO https://github.com/YOU54F/pact-ruby-standalone/releases/download/v3.0.0/pact-broker-app.exe.gz
         gunzip pact-broker-app.exe.gz
-        ls -l
+        ls -l ./*
+        export RACK_ENV=production
         ./pact-broker-app.exe
