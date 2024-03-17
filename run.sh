@@ -35,3 +35,16 @@ target/release/pact_cli mock verify --help
 target/release/pact_cli mock shutdown --help
 target/release/pact_cli mock shutdown-master --help
 
+
+target/release/pact_cli pact-broker list-latest-pact-versions --name name_foo1
+target/release/pact_cli pact-broker create-environment --name name_foo1
+target/release/pact_cli pact-broker create-environment --name name_foo2 --display-name display_name_foo
+target/release/pact_cli pact-broker create-environment --name name_foo3 --display-name display_name_foo --contact-name contact_name_foo
+target/release/pact_cli pact-broker create-environment --name name_foo4 --display-name display_name_foo --contact-name contact_name_foo --contact-email-address contact.email.address@foo.bar
+export UUID=$(target/release/pact_cli pact-broker create-environment --name name_foo5 --output=id)
+target/release/pact_cli pact-broker describe-environment --uuid $UUID
+target/release/pact_cli pact-broker update-environment --uuid $UUID --name name_foo6
+target/release/pact_cli pact-broker update-environment --uuid $UUID --name name_foo7 --display-name display_name_foo6
+target/release/pact_cli pact-broker update-environment --uuid $UUID --name name_foo8 --contact-name contact_name_foo8
+target/release/pact_cli pact-broker update-environment --uuid $UUID --name name_foo9 --contact-name contact_name_foo9 --contact-email-address contact_name_foo7
+target/release/pact_cli pact-broker delete-environment --uuid $UUID

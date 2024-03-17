@@ -116,14 +116,14 @@ Options:
           The uniquely identifying name of the environment as used in deployment code
       --display-name <DISPLAY_NAME>
           The display name of the environment
-      --production <production>
+      --production
           Whether or not this environment is a production environment. This is currently informational only.
       --contact-name <CONTACT_NAME>
           The name of the team/person responsible for this environment
       --contact-email-address <CONTACT_EMAIL_ADDRESS>
           The email address of the team/person responsible for this environment
   -o, --output <OUTPUT>
-          Value must be one of ["json", "text"] [default: text] [possible values: json, text]
+          Value must be one of ["json", "text", "id"] [default: text] [possible values: json, text, id]
   -b, --broker-base-url <PACT_BROKER_BASE_URL>
           The base URL of the Pact Broker [env: PACT_BROKER_BASE_URL=]
   -u, --broker-username <PACT_BROKER_USERNAME>
@@ -156,14 +156,14 @@ Options:
           The uniquely identifying name of the environment as used in deployment code
       --display-name <DISPLAY_NAME>
           The display name of the environment
-      --production <production>
+      --production
           Whether or not this environment is a production environment. This is currently informational only.
       --contact-name <CONTACT_NAME>
           The name of the team/person responsible for this environment
       --contact-email-address <CONTACT_EMAIL_ADDRESS>
           The email address of the team/person responsible for this environment
   -o, --output <OUTPUT>
-          Value must be one of ["json", "text"] [default: text] [possible values: json, text]
+          Value must be one of ["json", "text", "id"] [default: text] [possible values: json, text, id]
   -b, --broker-base-url <PACT_BROKER_BASE_URL>
           The base URL of the Pact Broker [env: PACT_BROKER_BASE_URL=]
   -u, --broker-username <PACT_BROKER_USERNAME>
@@ -222,8 +222,6 @@ Usage: pact_cli pact-broker delete-environment [OPTIONS] --uuid <UUID> --broker-
 Options:
       --uuid <UUID>
           The UUID of the environment to delete
-  -o, --output <OUTPUT>
-          Value must be one of ["json", "text"] [default: text] [possible values: json, text]
   -b, --broker-base-url <PACT_BROKER_BASE_URL>
           The base URL of the Pact Broker [env: PACT_BROKER_BASE_URL=]
   -u, --broker-username <PACT_BROKER_USERNAME>
@@ -251,7 +249,7 @@ Usage: pact_cli pact-broker list-environments [OPTIONS] --broker-base-url <PACT_
 
 Options:
   -o, --output <OUTPUT>
-          Value must be one of ["json", "text"] [default: text] [possible values: json, text]
+          Value must be one of ["json", "text", "pretty"] [default: text] [possible values: json, text, pretty]
   -b, --broker-base-url <PACT_BROKER_BASE_URL>
           The base URL of the Pact Broker [env: PACT_BROKER_BASE_URL=]
   -u, --broker-username <PACT_BROKER_USERNAME>
@@ -994,6 +992,8 @@ Commands:
   pactflow     
   completions  Generates completion scripts for your shell
   docker       Run the Pact Broker as a Docker container
+  examples     download example projects
+  project      Pact project actions for setting up and managing pact projects
   standalone   Install & Run the Pact Broker in $HOME/traveling-broker
   plugin       CLI utility for Pact plugins
   mock         Standalone Pact mock server

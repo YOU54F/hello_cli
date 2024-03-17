@@ -259,394 +259,478 @@
 
 #![warn(missing_docs)]
 
-// Due to large generated future for async fns
-#![type_length_limit="100000000"]
-
 use std::env;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 
-use clap::{ArgMatches, Command};
 use clap::error::ErrorKind;
-use log::{LevelFilter};
+use clap::{ArgMatches, Command};
+use log::LevelFilter;
 use maplit::hashmap;
-use pact_models::{PACT_RUST_VERSION, PactSpecification};
 use pact_models::prelude::HttpAuth;
+use pact_models::{PactSpecification, PACT_RUST_VERSION};
 use tokio::time::sleep;
-use tracing::{debug, debug_span, error, Instrument, warn};
+use tracing::{debug, debug_span, error, warn, Instrument};
 use tracing_subscriber::FmtSubscriber;
 
-use pact_verifier::{
-  FilterInfo,
-  NullRequestFilterExecutor,
-  PactSource,
-  ProviderInfo,
-  PublishOptions,
-  VerificationOptions,
-  verify_provider_async,
-  ProviderTransport
-};
 use pact_verifier::callback_executors::HttpRequestProviderStateExecutor;
 use pact_verifier::metrics::VerificationMetrics;
 use pact_verifier::selectors::{consumer_tags_to_selectors, json_to_selectors};
+use pact_verifier::{
+    verify_provider_async, FilterInfo, NullRequestFilterExecutor, PactSource, ProviderInfo,
+    ProviderTransport, PublishOptions, VerificationOptions,
+};
 use tracing_log::LogTracer;
 
 mod args;
 mod reports;
 
 pub fn build_args() -> Command {
-  return args::setup_app();
+    return args::setup_app();
 }
 /// Handles the command line arguments from the running process
 pub async fn handle_cli(version: &'static str) -> Result<(), i32> {
-  let app = args::setup_app();
-  let matches = app
-    .arg_required_else_help(true)
-    .try_get_matches();
+    let app = args::setup_app();
+    let matches = app.arg_required_else_help(true).try_get_matches();
 
-  match matches {
-    Ok(results) => handle_matches(&results).await,
-    Err(ref err) => {
-      match err.kind() {
-        ErrorKind::DisplayHelp => {
-          let _ = err.print();
-          Ok(())
+    match matches {
+        Ok(results) => handle_matches(&results).await,
+        Err(ref err) => match err.kind() {
+            ErrorKind::DisplayHelp => {
+                let _ = err.print();
+                Ok(())
+            }
+            ErrorKind::DisplayVersion => {
+                print_version(version);
+                println!();
+                Ok(())
+            }
+            _ => err.exit(),
         },
-        ErrorKind::DisplayVersion => {
-          print_version(version);
-          println!();
-          Ok(())
-        },
-        _ => {
-          err.exit()
-        }
-      }
     }
-  }
 }
 
 pub async fn handle_matches(matches: &ArgMatches) -> Result<(), i32> {
-  let coloured_output = setup_output(matches);
+    let coloured_output = setup_output(matches);
 
-  let provider = configure_provider(matches);
-  let source = pact_source(matches);
-  let filter = interaction_filter(matches);
-  let provider_state_executor = Arc::new(HttpRequestProviderStateExecutor {
-    state_change_url: matches.get_one::<String>("state-change-url").cloned(),
-    state_change_body: !matches.get_flag("state-change-as-query"),
-    state_change_teardown: matches.get_flag("state-change-teardown"),
-    .. HttpRequestProviderStateExecutor::default()
-  });
+    let provider = configure_provider(matches);
+    let source = pact_source(matches);
+    let filter = interaction_filter(matches);
+    let provider_state_executor = Arc::new(HttpRequestProviderStateExecutor {
+        state_change_url: matches.get_one::<String>("state-change-url").cloned(),
+        state_change_body: !matches.get_flag("state-change-as-query"),
+        state_change_teardown: matches.get_flag("state-change-teardown"),
+        ..HttpRequestProviderStateExecutor::default()
+    });
 
-  let mut custom_headers = hashmap!{};
-  if let Some(headers) = matches.get_many::<String>("custom-header") {
-    for header in headers {
-      let (key, value) = header.split_once('=').ok_or_else(|| {
+    let mut custom_headers = hashmap! {};
+    if let Some(headers) = matches.get_many::<String>("custom-header") {
+        for header in headers {
+            let (key, value) = header.split_once('=').ok_or_else(|| {
         error!("Custom header values must be in the form KEY=VALUE, where KEY and VALUE contain ASCII characters (32-127) only.");
         3
       })?;
-      custom_headers.insert(key.to_string(), value.to_string());
+            custom_headers.insert(key.to_string(), value.to_string());
+        }
     }
-  }
 
-  let verification_options = VerificationOptions {
-    request_filter: None::<Arc<NullRequestFilterExecutor>>,
-    disable_ssl_verification: matches.get_flag("disable-ssl-verification"),
-    request_timeout: matches.get_one::<u64>("request-timeout").map(|v| *v).unwrap_or(5000),
-    custom_headers,
-    coloured_output,
-    no_pacts_is_error: !matches.get_flag("ignore-no-pacts-error"),
-    .. VerificationOptions::default()
-  };
+    let verification_options = VerificationOptions {
+        request_filter: None::<Arc<NullRequestFilterExecutor>>,
+        disable_ssl_verification: matches.get_flag("disable-ssl-verification"),
+        request_timeout: matches
+            .get_one::<u64>("request-timeout")
+            .map(|v| *v)
+            .unwrap_or(5000),
+        custom_headers,
+        coloured_output,
+        no_pacts_is_error: !matches.get_flag("ignore-no-pacts-error"),
+        ..VerificationOptions::default()
+    };
 
-  let publish_options = if matches.get_flag("publish") {
-    Some(PublishOptions {
-      provider_version: matches.get_one::<String>("provider-version").cloned(),
-      build_url: matches.get_one::<String>("build-url").cloned(),
-      provider_tags: matches.get_many::<String>("provider-tags")
-        .map_or_else(Vec::new, |tags| tags.map(|tag| tag.clone()).collect()),
-      provider_branch: matches.get_one::<String>("provider-branch").cloned()
-    })
-  } else {
-    None
-  };
+    let publish_options = if matches.get_flag("publish") {
+        Some(PublishOptions {
+            provider_version: matches.get_one::<String>("provider-version").cloned(),
+            build_url: matches.get_one::<String>("build-url").cloned(),
+            provider_tags: matches
+                .get_many::<String>("provider-tags")
+                .map_or_else(Vec::new, |tags| tags.map(|tag| tag.clone()).collect()),
+            provider_branch: matches.get_one::<String>("provider-branch").cloned(),
+        })
+    } else {
+        None
+    };
 
-  for s in &source {
-    debug!("Pact source to verify = {}", s);
-  };
+    for s in &source {
+        debug!("Pact source to verify = {}", s);
+    }
 
-  let provider_name = provider.name.clone();
-  verify_provider_async(
-    provider,
-    source,
-    filter,
-    matches.get_many::<String>("filter-consumer").unwrap_or_default().map(|v| v.to_string()).collect::<Vec<_>>(),
-    &verification_options,
-    publish_options.as_ref(),
-    &provider_state_executor,
-    Some(VerificationMetrics {
-      test_framework: "pact_verifier_cli".to_string(),
-      app_name: "pact_verifier_cli".to_string(),
-      app_version: env!("CARGO_PKG_VERSION").to_string()
-    }),
-  ).instrument(debug_span!("verify_provider", provider_name = provider_name.as_str())).await
+    let provider_name = provider.name.clone();
+    verify_provider_async(
+        provider,
+        source,
+        filter,
+        matches
+            .get_many::<String>("filter-consumer")
+            .unwrap_or_default()
+            .map(|v| v.to_string())
+            .collect::<Vec<_>>(),
+        &verification_options,
+        publish_options.as_ref(),
+        &provider_state_executor,
+        Some(VerificationMetrics {
+            test_framework: "pact_verifier_cli".to_string(),
+            app_name: "pact_verifier_cli".to_string(),
+            app_version: env!("CARGO_PKG_VERSION").to_string(),
+        }),
+    )
+    .instrument(debug_span!(
+        "verify_provider",
+        provider_name = provider_name.as_str()
+    ))
+    .await
     .map_err(|err| {
-      error!("Verification failed with error: {}", err);
-      2
+        error!("Verification failed with error: {}", err);
+        2
     })
     .and_then(|result| {
-      if let Some(json_file) = matches.get_one::<String>("json-file") {
-        if let Err(err) = reports::write_json_report(&result, json_file.as_str()) {
-          error!("Failed to write JSON report to '{json_file}' - {err}");
-          return Err(2)
-        }
-      }
-
-      if let Some(_junit_file) = matches.get_one::<String>("junit-file") {
-        #[cfg(feature = "junit")]
-        if let Err(err) = reports::write_junit_report(&result, _junit_file.as_str(), &provider_name) {
-          error!("Failed to write JUnit report to '{_junit_file}' - {err}");
-          return Err(2)
+        if let Some(json_file) = matches.get_one::<String>("json-file") {
+            if let Err(err) = reports::write_json_report(&result, json_file.as_str()) {
+                error!("Failed to write JSON report to '{json_file}' - {err}");
+                return Err(2);
+            }
         }
 
-        #[cfg(not(feature = "junit"))]
-        warn!("junit feature is not enabled, ignoring junit-file option");
-      }
+        if let Some(_junit_file) = matches.get_one::<String>("junit-file") {
+            #[cfg(feature = "junit")]
+            if let Err(err) =
+                reports::write_junit_report(&result, _junit_file.as_str(), &provider_name)
+            {
+                error!("Failed to write JUnit report to '{_junit_file}' - {err}");
+                return Err(2);
+            }
 
-      if result.result { Ok(()) } else { Err(1) }
+            #[cfg(not(feature = "junit"))]
+            warn!("junit feature is not enabled, ignoring junit-file option");
+        }
+
+        if result.result {
+            Ok(())
+        } else {
+            Err(1)
+        }
     })
 }
 
 fn setup_output(matches: &ArgMatches) -> bool {
-  let coloured_output = !matches.get_flag("no-colour");
-  let level = matches.get_one::<String>("loglevel").cloned().unwrap_or("warn".to_string());
-  let log_level = match level.as_str() {
-    "none" => LevelFilter::Off,
-    _ => LevelFilter::from_str(level.as_str()).unwrap()
-  };
-  let _ = LogTracer::builder()
-    .with_max_level(log_level)
-    .init();
+    let coloured_output = !matches.get_flag("no-colour");
+    let level = matches
+        .get_one::<String>("loglevel")
+        .cloned()
+        .unwrap_or("warn".to_string());
+    let log_level = match level.as_str() {
+        "none" => LevelFilter::Off,
+        _ => LevelFilter::from_str(level.as_str()).unwrap(),
+    };
+    let _ = LogTracer::builder().with_max_level(log_level).init();
 
-  if matches.get_flag("pretty-log") {
-    setup_pretty_log(level.as_str(), coloured_output);
-  } else if matches.get_flag("full-log") {
-    setup_default_log(level.as_str(), coloured_output);
-  } else if matches.get_flag("compact-log") {
-    setup_compact_log(level.as_str(), coloured_output);
-  } else {
-    setup_default_log(level.as_str(), coloured_output);
-  };
+    if matches.get_flag("pretty-log") {
+        setup_pretty_log(level.as_str(), coloured_output);
+    } else if matches.get_flag("full-log") {
+        setup_default_log(level.as_str(), coloured_output);
+    } else if matches.get_flag("compact-log") {
+        setup_compact_log(level.as_str(), coloured_output);
+    } else {
+        setup_default_log(level.as_str(), coloured_output);
+    };
 
-  coloured_output
+    coloured_output
 }
 
 fn setup_compact_log(level: &str, coloured_output: bool) {
-  let subscriber = FmtSubscriber::builder()
-    .compact()
-    .with_max_level(tracing_core::LevelFilter::from_str(level)
-      .unwrap_or(tracing_core::LevelFilter::INFO))
-    .with_thread_names(false)
-    .with_ansi(coloured_output)
-    .finish();
+    let subscriber = FmtSubscriber::builder()
+        .compact()
+        .with_max_level(
+            tracing_core::LevelFilter::from_str(level).unwrap_or(tracing_core::LevelFilter::INFO),
+        )
+        .with_thread_names(false)
+        .with_ansi(coloured_output)
+        .finish();
 
-  if let Err(err) = tracing::subscriber::set_global_default(subscriber) {
-    eprintln!("WARNING: Failed to initialise global tracing subscriber - {err}");
-  };
+    if let Err(err) = tracing::subscriber::set_global_default(subscriber) {
+        eprintln!("WARNING: Failed to initialise global tracing subscriber - {err}");
+    };
 }
 
 fn setup_default_log(level: &str, coloured_output: bool) {
-  let subscriber = FmtSubscriber::builder()
-    .with_max_level(tracing_core::LevelFilter::from_str(level)
-      .unwrap_or(tracing_core::LevelFilter::INFO))
-    .with_thread_names(true)
-    .with_ansi(coloured_output)
-    .finish();
+    let subscriber = FmtSubscriber::builder()
+        .with_max_level(
+            tracing_core::LevelFilter::from_str(level).unwrap_or(tracing_core::LevelFilter::INFO),
+        )
+        .with_thread_names(true)
+        .with_ansi(coloured_output)
+        .finish();
 
-  if let Err(err) = tracing::subscriber::set_global_default(subscriber) {
-    eprintln!("WARNING: Failed to initialise global tracing subscriber - {err}");
-  };
+    if let Err(err) = tracing::subscriber::set_global_default(subscriber) {
+        eprintln!("WARNING: Failed to initialise global tracing subscriber - {err}");
+    };
 }
 
 fn setup_pretty_log(level: &str, coloured_output: bool) {
-  let subscriber = FmtSubscriber::builder()
-    .pretty()
-    .with_max_level(tracing_core::LevelFilter::from_str(level)
-      .unwrap_or(tracing_core::LevelFilter::INFO))
-    .with_thread_names(true)
-    .with_ansi(coloured_output)
-    .finish();
+    let subscriber = FmtSubscriber::builder()
+        .pretty()
+        .with_max_level(
+            tracing_core::LevelFilter::from_str(level).unwrap_or(tracing_core::LevelFilter::INFO),
+        )
+        .with_thread_names(true)
+        .with_ansi(coloured_output)
+        .finish();
 
-  if let Err(err) = tracing::subscriber::set_global_default(subscriber) {
-    eprintln!("WARNING: Failed to initialise global tracing subscriber - {err}");
-  };
+    if let Err(err) = tracing::subscriber::set_global_default(subscriber) {
+        eprintln!("WARNING: Failed to initialise global tracing subscriber - {err}");
+    };
 }
 
 #[allow(deprecated)]
 pub(crate) fn configure_provider(matches: &ArgMatches) -> ProviderInfo {
-  // It is ok to unwrap values here, as they have all been validated by the CLI
-  let transports = matches.get_many::<(String, u16)>("transports")
-    .map(|values| {
-      values.map(|(transport, port)| {
-        ProviderTransport {
-          transport: transport.to_string(),
-          port: Some(*port),
-          path: None,
-          scheme: None
-        }
-      }).collect()
-    }).unwrap_or_default();
-  ProviderInfo {
-    host: matches.get_one::<String>("hostname").cloned().unwrap_or("localhost".to_string()),
-    port: matches.get_one::<u16>("port").map(|p| *p),
-    path: matches.get_one::<String>("base-path").cloned().unwrap_or_default(),
-    protocol: matches.get_one::<String>("transport").cloned().unwrap_or("http".to_string()),
-    name: matches.get_one::<String>("provider-name").cloned().unwrap_or("provider".to_string()),
-    transports,
-    ..ProviderInfo::default()
-  }
+    // It is ok to unwrap values here, as they have all been validated by the CLI
+    let transports = matches
+        .get_many::<(String, u16)>("transports")
+        .map(|values| {
+            values
+                .map(|(transport, port)| ProviderTransport {
+                    transport: transport.to_string(),
+                    port: Some(*port),
+                    path: None,
+                    scheme: None,
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    ProviderInfo {
+        host: matches
+            .get_one::<String>("hostname")
+            .cloned()
+            .unwrap_or("localhost".to_string()),
+        port: matches.get_one::<u16>("port").map(|p| *p),
+        path: matches
+            .get_one::<String>("base-path")
+            .cloned()
+            .unwrap_or_default(),
+        protocol: matches
+            .get_one::<String>("transport")
+            .cloned()
+            .unwrap_or("http".to_string()),
+        name: matches
+            .get_one::<String>("provider-name")
+            .cloned()
+            .unwrap_or("provider".to_string()),
+        transports,
+        ..ProviderInfo::default()
+    }
 }
 
 pub fn print_version(version: &str) {
-  println!("pact verifier version   : v{}", version);
-  println!("pact specification      : v{}", PactSpecification::V4.version_str());
-  println!("models version          : v{}", PACT_RUST_VERSION.unwrap_or_default());
+    println!("pact verifier version   : v{}", version);
+    println!(
+        "pact specification      : v{}",
+        PactSpecification::V4.version_str()
+    );
+    println!(
+        "models version          : v{}",
+        PACT_RUST_VERSION.unwrap_or_default()
+    );
 }
 
 fn pact_source(matches: &ArgMatches) -> Vec<PactSource> {
-  let mut sources = vec![];
+    let mut sources = vec![];
 
-  if let Some(webhook_url) = matches.get_one::<String>("webhook-callback-url") {
-    let broker_url = matches.get_one::<String>("broker-url").unwrap();
-    let auth = matches.get_one::<String>("user").map(|user| {
-      HttpAuth::User(user.clone(), matches.get_one::<String>("password").cloned())
-    }).or_else(|| matches.get_one::<String>("token").map(|t| HttpAuth::Token(t.clone())));
-    sources.push(PactSource::WebhookCallbackUrl {
-      pact_url: webhook_url.clone(),
-      broker_url: broker_url.clone(),
-      auth
-    });
-  } else {
-    if let Some(values) = matches.get_many::<String>("file") {
-      sources.extend(values.map(|v| PactSource::File(v.clone())).collect::<Vec<PactSource>>());
-    };
-
-    if let Some(values) = matches.get_many::<String>("dir") {
-      sources.extend(values.map(|v| PactSource::Dir(v.clone())).collect::<Vec<PactSource>>());
-    };
-
-    if let Some(values) = matches.get_many::<String>("url") {
-      sources.extend(values.map(|v| {
-        if let Some(user) = matches.get_one::<String>("user") {
-          PactSource::URL(v.clone(), Some(HttpAuth::User(user.clone(),
-                                                         matches.get_one::<String>("password").map(|p| p.clone()))))
-        } else if let Some(token) = matches.get_one::<String>("token") {
-          PactSource::URL(v.clone(), Some(HttpAuth::Token(token.clone())))
-        } else {
-          PactSource::URL(v.clone(), None)
-        }
-      }).collect::<Vec<PactSource>>());
-    };
-
-    if let Some(broker_url) = matches.get_one::<String>("broker-url") {
-      let name = matches.get_one::<String>("provider-name").cloned().unwrap_or_default();
-      let auth = matches.get_one::<String>("user").map(|user| {
-        HttpAuth::User(user.clone(), matches.get_one::<String>("password").cloned())
-      }).or_else(|| matches.get_one::<String>("token").map(|t| HttpAuth::Token(t.clone())));
-
-      let source = if matches.contains_id("consumer-version-selectors") || matches.contains_id("consumer-version-tags") {
-        let pending = matches.get_flag("enable-pending");
-        let wip = matches.get_one::<String>("include-wip-pacts-since").cloned();
-        let provider_tags = matches.get_many::<String>("provider-tags")
-          .map_or_else(Vec::new, |tags| tags.map(|tag| tag.clone()).collect());
-        let provider_branch = matches.get_one::<String>("provider-branch").cloned();
-
-        let selectors = if matches.contains_id("consumer-version-selectors") {
-          matches.get_many::<String>("consumer-version-selectors")
-            .map_or_else(Vec::new, |s| json_to_selectors(s.map(|v| v.as_str()).collect::<Vec<_>>()))
-        } else if matches.contains_id("consumer-version-tags") {
-          matches.get_many::<String>("consumer-version-tags")
-            .map_or_else(Vec::new, |tags| consumer_tags_to_selectors(tags.map(|v| v.as_str()).collect::<Vec<_>>()))
-        } else {
-          vec![]
+    if let Some(webhook_url) = matches.get_one::<String>("webhook-callback-url") {
+        let broker_url = matches.get_one::<String>("broker-url").unwrap();
+        let auth = matches
+            .get_one::<String>("user")
+            .map(|user| {
+                HttpAuth::User(user.clone(), matches.get_one::<String>("password").cloned())
+            })
+            .or_else(|| {
+                matches
+                    .get_one::<String>("token")
+                    .map(|t| HttpAuth::Token(t.clone()))
+            });
+        sources.push(PactSource::WebhookCallbackUrl {
+            pact_url: webhook_url.clone(),
+            broker_url: broker_url.clone(),
+            auth,
+        });
+    } else {
+        if let Some(values) = matches.get_many::<String>("file") {
+            sources.extend(
+                values
+                    .map(|v| PactSource::File(v.clone()))
+                    .collect::<Vec<PactSource>>(),
+            );
         };
 
-        PactSource::BrokerWithDynamicConfiguration {
-          provider_name: name,
-          broker_url: broker_url.into(),
-          enable_pending: pending,
-          include_wip_pacts_since: wip,
-          provider_tags,
-          provider_branch,
-          selectors,
-          auth,
-          links: vec![]
-        }
-      } else {
-        PactSource::BrokerUrl(name, broker_url.to_string(), auth, vec![])
-      };
-      sources.push(source);
-    };
-  }
+        if let Some(values) = matches.get_many::<String>("dir") {
+            sources.extend(
+                values
+                    .map(|v| PactSource::Dir(v.clone()))
+                    .collect::<Vec<PactSource>>(),
+            );
+        };
 
-  sources
+        if let Some(values) = matches.get_many::<String>("url") {
+            sources.extend(
+                values
+                    .map(|v| {
+                        if let Some(user) = matches.get_one::<String>("user") {
+                            PactSource::URL(
+                                v.clone(),
+                                Some(HttpAuth::User(
+                                    user.clone(),
+                                    matches.get_one::<String>("password").map(|p| p.clone()),
+                                )),
+                            )
+                        } else if let Some(token) = matches.get_one::<String>("token") {
+                            PactSource::URL(v.clone(), Some(HttpAuth::Token(token.clone())))
+                        } else {
+                            PactSource::URL(v.clone(), None)
+                        }
+                    })
+                    .collect::<Vec<PactSource>>(),
+            );
+        };
+
+        if let Some(broker_url) = matches.get_one::<String>("broker-url") {
+            let name = matches
+                .get_one::<String>("provider-name")
+                .cloned()
+                .unwrap_or_default();
+            let auth = matches
+                .get_one::<String>("user")
+                .map(|user| {
+                    HttpAuth::User(user.clone(), matches.get_one::<String>("password").cloned())
+                })
+                .or_else(|| {
+                    matches
+                        .get_one::<String>("token")
+                        .map(|t| HttpAuth::Token(t.clone()))
+                });
+
+            let source = if matches.contains_id("consumer-version-selectors")
+                || matches.contains_id("consumer-version-tags")
+            {
+                let pending = matches.get_flag("enable-pending");
+                let wip = matches
+                    .get_one::<String>("include-wip-pacts-since")
+                    .cloned();
+                let provider_tags = matches
+                    .get_many::<String>("provider-tags")
+                    .map_or_else(Vec::new, |tags| tags.map(|tag| tag.clone()).collect());
+                let provider_branch = matches.get_one::<String>("provider-branch").cloned();
+
+                let selectors = if matches.contains_id("consumer-version-selectors") {
+                    matches
+                        .get_many::<String>("consumer-version-selectors")
+                        .map_or_else(Vec::new, |s| {
+                            json_to_selectors(s.map(|v| v.as_str()).collect::<Vec<_>>())
+                        })
+                } else if matches.contains_id("consumer-version-tags") {
+                    matches
+                        .get_many::<String>("consumer-version-tags")
+                        .map_or_else(Vec::new, |tags| {
+                            consumer_tags_to_selectors(tags.map(|v| v.as_str()).collect::<Vec<_>>())
+                        })
+                } else {
+                    vec![]
+                };
+
+                PactSource::BrokerWithDynamicConfiguration {
+                    provider_name: name,
+                    broker_url: broker_url.into(),
+                    enable_pending: pending,
+                    include_wip_pacts_since: wip,
+                    provider_tags,
+                    provider_branch,
+                    selectors,
+                    auth,
+                    links: vec![],
+                }
+            } else {
+                PactSource::BrokerUrl(name, broker_url.to_string(), auth, vec![])
+            };
+            sources.push(source);
+        };
+    }
+
+    sources
 }
 
 fn interaction_filter(matches: &ArgMatches) -> FilterInfo {
-  if matches.contains_id("filter-description") &&
-    (matches.contains_id("filter-state") || matches.get_flag("filter-no-state")) {
-    if let Some(state) = matches.get_one::<String>("filter-state") {
-      FilterInfo::DescriptionAndState(matches.get_one::<String>("filter-description").unwrap().clone(),
-                                      state.clone())
+    if matches.contains_id("filter-description")
+        && (matches.contains_id("filter-state") || matches.get_flag("filter-no-state"))
+    {
+        if let Some(state) = matches.get_one::<String>("filter-state") {
+            FilterInfo::DescriptionAndState(
+                matches
+                    .get_one::<String>("filter-description")
+                    .unwrap()
+                    .clone(),
+                state.clone(),
+            )
+        } else {
+            FilterInfo::DescriptionAndState(
+                matches
+                    .get_one::<String>("filter-description")
+                    .unwrap()
+                    .clone(),
+                String::new(),
+            )
+        }
+    } else if let Some(desc) = matches.get_one::<String>("filter-description") {
+        FilterInfo::Description(desc.clone())
+    } else if let Some(state) = matches.get_one::<String>("filter-state") {
+        FilterInfo::State(state.clone())
+    } else if matches.get_flag("filter-no-state") {
+        FilterInfo::State(String::new())
     } else {
-      FilterInfo::DescriptionAndState(matches.get_one::<String>("filter-description").unwrap().clone(),
-                                      String::new())
+        FilterInfo::None
     }
-  } else if let Some(desc) = matches.get_one::<String>("filter-description") {
-    FilterInfo::Description(desc.clone())
-  } else if let Some(state) = matches.get_one::<String>("filter-state") {
-    FilterInfo::State(state.clone())
-  } else if matches.get_flag("filter-no-state") {
-    FilterInfo::State(String::new())
-  } else {
-    FilterInfo::None
-  }
 }
 
 fn main() {
-  init_windows();
+    init_windows();
 
-  let runtime = tokio::runtime::Builder::new_multi_thread()
-    .enable_all()
-    .build()
-    .expect("Could not start a Tokio runtime for running async tasks");
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .expect("Could not start a Tokio runtime for running async tasks");
 
-  let result = runtime.block_on(async {
-    let result = handle_cli(clap::crate_version!()).await;
+    let result = runtime.block_on(async {
+        let result = handle_cli(clap::crate_version!()).await;
 
-    // Add a small delay to let asynchronous tasks to complete
-    sleep(Duration::from_millis(500)).await;
+        // Add a small delay to let asynchronous tasks to complete
+        sleep(Duration::from_millis(500)).await;
 
-    result
-  });
+        result
+    });
 
-  runtime.shutdown_timeout(Duration::from_millis(500));
+    runtime.shutdown_timeout(Duration::from_millis(500));
 
-  if let Err(err) = result {
-    std::process::exit(err);
-  }
+    if let Err(err) = result {
+        std::process::exit(err);
+    }
 }
 
 #[cfg(windows)]
 fn init_windows() {
-  if let Err(err) = ansi_term::enable_ansi_support() {
-    warn!("Could not enable ANSI console support - {err}");
-  }
+    if let Err(err) = ansi_term::enable_ansi_support() {
+        warn!("Could not enable ANSI console support - {err}");
+    }
 }
 
 #[cfg(not(windows))]
-fn init_windows() { }
+fn init_windows() {}
 
 // #[cfg(test)]
 // mod tests {

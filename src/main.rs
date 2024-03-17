@@ -3,6 +3,7 @@ mod cli;
 use clap::error::ErrorKind;
 use clap_complete::{generate_to, Shell};
 use pact_broker::{HALClient, Link, PactBrokerError};
+use serde_json::json;
 use serde_json::Value;
 use std::env;
 use std::fs;
@@ -14,7 +15,10 @@ mod pact_plugin_cli;
 use crate::cli::pact_mock_server_cli;
 use crate::cli::pact_stub_server_cli;
 use crate::cli::pact_verifier_cli;
+use comfy_table::presets::UTF8_FULL;
+use comfy_table::Table;
 
+use ansi_term::Colour;
 use maplit::hashmap;
 use pact_models::http_utils::HttpAuth;
 use tabled::{builder::Builder, settings::Style};
@@ -127,7 +131,7 @@ pub fn main() {
                 Some(("pact-broker", args)) => {
                     match args.subcommand() {
                         Some(("publish", args)) => {
-                            print!("{:?}", args);
+                            println!("{:?}", args);
                             // // Ok(());
                         }
                         Some(("list-latest-pact-versions", args)) => {
@@ -198,24 +202,527 @@ pub fn main() {
                             });
                         }
                         Some(("create-environment", args)) => {
-                            // Handle create-environment command
-                            // Ok(());
+                            let name = args.get_one::<String>("name");
+                            let display_name = args.get_one::<String>("display-name");
+                            let production = args.get_flag("production");
+                            let contact_name = args.get_one::<String>("contact-name");
+                            let contact_email_address =
+                                args.get_one::<String>("contact-email-address");
+                            let broker_url = get_broker_url(args);
+                            let auth = get_auth(args);
+                            tokio::runtime::Runtime::new().unwrap().block_on(async {
+                                let hal_client: HALClient =
+                                    HALClient::with_url(&broker_url, Some(auth.clone()));
+
+                            let mut payload = json!({});
+                            payload["production"] = serde_json::Value::Bool(production);
+                            if let Some(name) = name {
+                                payload["name"] = serde_json::Value::String(name.to_string());
+                            } else {
+                                println!("❌ {}", Colour::Red.paint("Name is required"));
+                                std::process::exit(1);
+                            }
+                            if let Some(contact_name) = contact_name {
+                                payload["contacts"] = serde_json::Value::Array(vec![{
+                                    let mut map = serde_json::Map::new();
+                                    map.insert("name".to_string(), serde_json::Value::String(contact_name.to_string()));
+                                    serde_json::Value::Object(map)
+                                }]);
+                            }
+                            if let Some(display_name) = display_name {
+                                payload["displayName"] = serde_json::Value::String(display_name.to_string());
+                            }
+                            if let Some(contact_email_address) = contact_email_address {
+                               if payload["contacts"].is_array() {
+                                    let contacts = payload["contacts"].as_array_mut().unwrap();
+                                    let contact = contacts.get_mut(0).unwrap();
+                                    let contact_map = contact.as_object_mut().unwrap();
+                                    contact_map.insert("email".to_string(), serde_json::Value::String(contact_email_address.to_string()));
+                                } else {
+                                    payload["contacts"] = serde_json::Value::Array(vec![{
+                                        let mut map = serde_json::Map::new();
+                                        map.insert("email".to_string(), serde_json::Value::String(contact_email_address.to_string()));
+                                        serde_json::Value::Object(map)
+                                    }]);
+                                }
+                            }
+                            let res = hal_client.post_json(&(broker_url + "/environments"), &payload.to_string()).await;
+
+                            let default_output = "text".to_string();
+                            let output = args.get_one::<String>("output").unwrap_or(&default_output);
+                            let columns = vec!["ID", "NAME", "DISPLAY NAME", "PRODUCTION", "CONTACT NAME", "CONTACT EMAIL ADDRESS"];
+                            let names = vec![
+                                vec!["id"],
+                                vec!["name"],
+                                vec!["displayName"],
+                                vec!["production"],
+                                vec!["contactName"],
+                                vec!["contactEmailAddress"],
+                            ];
+                            match res {
+                                Ok(res) => {
+                                        if output == "pretty" {
+                                            let json = serde_json::to_string_pretty(&res).unwrap();
+                                            println!("{}", json);
+                                        } else if output == "json" {
+                                            println!("{}", serde_json::to_string(&res).unwrap());
+                                        } else if output == "id" {
+                                            println!("{}", res["uuid"].to_string().trim_matches('"'));
+                                        } else if output == "table" {
+                                            generate_table(
+                                                &res,
+                                                columns,
+                                                names,
+                                            );
+                                        }
+                                        else {
+                                            let uuid = res["uuid"].to_string();
+                                            println!("✅ Created {} environment in the Pact Broker with UUID {}", Colour::Green.paint(name.unwrap()), Colour::Green.paint(uuid.trim_matches('"')));
+
+                                        }
+                                    std::process::exit(0);
+                                }
+                                Err(err) => {
+                                    match err {
+                                        // TODO process output based on user selection
+                                        PactBrokerError::LinkError(error) => {
+                                            println!("❌ {}", Colour::Red.paint(error));
+                                            std::process::exit(1);
+                                        }
+                                        PactBrokerError::ContentError(error) => {
+                                            println!("❌ {}", Colour::Red.paint(error));
+                                            std::process::exit(1);
+                                        }
+                                        PactBrokerError::IoError(error) => {
+                                            println!("❌ {}", Colour::Red.paint(error));
+                                            std::process::exit(1);
+                                        }
+                                        PactBrokerError::NotFound(error) => {
+                                            println!("❌ {}", Colour::Red.paint(error));
+                                            std::process::exit(1);
+                                        }
+                                        PactBrokerError::ValidationError(errors) => {
+                                            for error in errors {
+                                                println!("❌ {}", Colour::Red.paint(error));
+                                            }
+                                            std::process::exit(1);
+                                        }
+                                        _ => {
+                                            println!("❌ {}", Colour::Red.paint(err.to_string()));
+                                            std::process::exit(1);
+                                        }
+                                    }
+                                }
+                            }
+                        })
                         }
                         Some(("update-environment", args)) => {
-                            // Handle update-environment command
-                            // Ok(());
+                            let uuid = args.get_one::<String>("uuid").unwrap().to_string();
+                            let name = args.get_one::<String>("name");
+                            let display_name = args.get_one::<String>("display-name");
+                            let production = args.get_flag("production");
+                            let contact_name = args.get_one::<String>("contact-name");
+                            let contact_email_address =
+                                args.get_one::<String>("contact-email-address");
+                            let broker_url = get_broker_url(args);
+                            let auth = get_auth(args);
+                            tokio::runtime::Runtime::new().unwrap().block_on(async {
+                                let hal_client: HALClient =
+                                    HALClient::with_url(&broker_url, Some(auth.clone()));
+
+                            let mut payload = json!({});
+                            payload["uuid"] = serde_json::Value::String(uuid);
+                            payload["production"] = serde_json::Value::Bool(production);
+                            if let Some(name) = name {
+                                payload["name"] = serde_json::Value::String(name.to_string());
+                            } else {
+                                println!("❌ {}", Colour::Red.paint("Name is required"));
+                                std::process::exit(1);
+                            }
+                            if let Some(contact_name) = contact_name {
+                                payload["contacts"] = serde_json::Value::Array(vec![{
+                                    let mut map = serde_json::Map::new();
+                                    map.insert("name".to_string(), serde_json::Value::String(contact_name.to_string()));
+                                    serde_json::Value::Object(map)
+                                }]);
+                            }
+                            if let Some(display_name) = display_name {
+                                payload["displayName"] = serde_json::Value::String(display_name.to_string());
+                            }
+                            if let Some(contact_email_address) = contact_email_address {
+                               if payload["contacts"].is_array() {
+                                    let contacts = payload["contacts"].as_array_mut().unwrap();
+                                    let contact = contacts.get_mut(0).unwrap();
+                                    let contact_map = contact.as_object_mut().unwrap();
+                                    contact_map.insert("email".to_string(), serde_json::Value::String(contact_email_address.to_string()));
+                                } else {
+                                    payload["contacts"] = serde_json::Value::Array(vec![{
+                                        let mut map = serde_json::Map::new();
+                                        map.insert("email".to_string(), serde_json::Value::String(contact_email_address.to_string()));
+                                        serde_json::Value::Object(map)
+                                    }]);
+                                }
+                            }
+                            let res = hal_client.post_json(&(broker_url + "/environments"), &payload.to_string()).await;
+
+                            let default_output = "text".to_string();
+                            let output = args.get_one::<String>("output").unwrap_or(&default_output);
+                            let columns = vec!["ID", "NAME", "DISPLAY NAME", "PRODUCTION", "CONTACT NAME", "CONTACT EMAIL ADDRESS"];
+                            let names = vec![
+                                vec!["id"],
+                                vec!["name"],
+                                vec!["displayName"],
+                                vec!["production"],
+                                vec!["contactName"],
+                                vec!["contactEmailAddress"],
+                            ];
+                            match res {
+                                Ok(res) => {
+                                        if output == "pretty" {
+                                            let json = serde_json::to_string_pretty(&res).unwrap();
+                                            println!("{}", json);
+                                        } else if output == "json" {
+                                            println!("{}", serde_json::to_string(&res).unwrap());
+                                        } else if output == "id" {
+                                            println!("{}", res["uuid"].to_string().trim_matches('"'));
+                                        } else if output == "table" {
+                                            generate_table(
+                                                &res,
+                                                columns,
+                                                names,
+                                            );
+                                        }
+                                        else {
+                                            let uuid = res["uuid"].to_string();
+                                            println!("✅ Updated {} environment in the Pact Broker with UUID {}", Colour::Green.paint(name.unwrap()), Colour::Green.paint(uuid.trim_matches('"')));
+
+                                        }
+
+                                    std::process::exit(0);
+                                }
+                                Err(err) => {
+                                    match err {
+                                        // TODO process output based on user selection
+                                        PactBrokerError::LinkError(error) => {
+                                            println!("❌ {}", Colour::Red.paint(error));
+                                            std::process::exit(1);
+                                        }
+                                        PactBrokerError::ContentError(error) => {
+                                            println!("❌ {}", Colour::Red.paint(error));
+                                            std::process::exit(1);
+                                        }
+                                        PactBrokerError::IoError(error) => {
+                                            println!("❌ {}", Colour::Red.paint(error));
+                                            std::process::exit(1);
+                                        }
+                                        PactBrokerError::NotFound(error) => {
+                                            println!("❌ {}", Colour::Red.paint(error));
+                                            std::process::exit(1);
+                                        }
+                                        PactBrokerError::ValidationError(errors) => {
+                                            for error in errors {
+                                                println!("❌ {}", Colour::Red.paint(error));
+                                            }
+                                            std::process::exit(1);
+                                        }
+                                        _ => {
+                                            println!("❌ {}", Colour::Red.paint(err.to_string()));
+                                            std::process::exit(1);
+                                        }
+                                    }
+                                }
+                            }
+                        })
                         }
                         Some(("describe-environment", args)) => {
-                            // Handle describe-environment command
-                            // Ok(());
+                            let uuid = args.get_one::<String>("uuid").unwrap().to_string();
+                            let broker_url = get_broker_url(args);
+                            let auth = get_auth(args);
+                            tokio::runtime::Runtime::new().unwrap().block_on(async {
+                                let hal_client: HALClient =
+                                    HALClient::with_url(&broker_url, Some(auth.clone()));
+                                let res = hal_client
+                                    .fetch(&(broker_url + "/environments/" + &uuid))
+                                    .await;
+
+                                let default_output = "text".to_string();
+                                let output =
+                                    args.get_one::<String>("output").unwrap_or(&default_output);
+                                match res {
+                                    Ok(res) => {
+                                        if output == "pretty" {
+                                            let json = serde_json::to_string_pretty(&res).unwrap();
+                                            println!("{}", json);
+                                        } else if output == "json" {
+                                            println!("{}", serde_json::to_string(&res).unwrap());
+                                        } else {
+                                            let res_uuid = res["uuid"].to_string();
+                                            let res_name = res["name"].to_string();
+                                            let res_display_name = res["displayName"].to_string();
+                                            let res_production = res["production"].to_string();
+                                            let res_created_at = res["createdAt"].to_string();
+                                            let res_contacts = res["contacts"].as_array();
+
+                                            println!("✅");
+                                            println!(
+                                                "UUID {}",
+                                                Colour::Green.paint(res_uuid.trim_matches('"'))
+                                            );
+                                            println!(
+                                                "Name: {}",
+                                                Colour::Green.paint(res_name.trim_matches('"'))
+                                            );
+                                            println!(
+                                                "Display Name: {}",
+                                                Colour::Green
+                                                    .paint(res_display_name.trim_matches('"'))
+                                            );
+                                            println!(
+                                                "Production: {}",
+                                                Colour::Green
+                                                    .paint(res_production.trim_matches('"'))
+                                            );
+                                            println!(
+                                                "Created At: {}",
+                                                Colour::Green
+                                                    .paint(res_created_at.trim_matches('"'))
+                                            );
+                                            if let Some(contacts) = res_contacts {
+                                                println!("Contacts:");
+                                                for contact in contacts {
+                                                    println!(" - Contact:");
+                                                    if let Some(name) = contact["name"].as_str() {
+                                                        println!("  - Name: {}", name);
+                                                    }
+                                                    if let Some(email) = contact["email"].as_str() {
+                                                        println!("  - Email: {}", email);
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        std::process::exit(0);
+                                    }
+                                    Err(err) => {
+                                        match err {
+                                            // TODO process output based on user selection
+                                            PactBrokerError::LinkError(error) => {
+                                                println!("❌ {}", Colour::Red.paint(error));
+                                                std::process::exit(1);
+                                            }
+                                            PactBrokerError::ContentError(error) => {
+                                                println!("❌ {}", Colour::Red.paint(error));
+                                                std::process::exit(1);
+                                            }
+                                            PactBrokerError::IoError(error) => {
+                                                println!("❌ {}", Colour::Red.paint(error));
+                                                std::process::exit(1);
+                                            }
+                                            PactBrokerError::NotFound(error) => {
+                                                println!("❌ {}", Colour::Red.paint(error));
+                                                std::process::exit(1);
+                                            }
+                                            PactBrokerError::ValidationError(errors) => {
+                                                for error in errors {
+                                                    println!("❌ {}", Colour::Red.paint(error));
+                                                }
+                                                std::process::exit(1);
+                                            }
+                                            _ => {
+                                                println!(
+                                                    "❌ {}",
+                                                    Colour::Red.paint(err.to_string())
+                                                );
+                                                std::process::exit(1);
+                                            }
+                                        }
+                                    }
+                                }
+                            })
                         }
                         Some(("delete-environment", args)) => {
-                            // Handle delete-environment command
-                            // Ok(());
+                            let uuid = args.get_one::<String>("uuid").unwrap().to_string();
+                            let broker_url = get_broker_url(args);
+                            let auth = get_auth(args);
+                            tokio::runtime::Runtime::new().unwrap().block_on(async {
+                                let hal_client: HALClient =
+                                    HALClient::with_url(&broker_url, Some(auth.clone()));
+                            let res = hal_client.clone().fetch(&(broker_url.clone() + "/environments/" + &uuid)).await;
+                            match res {
+                                Ok(_) => {
+                                    let name = res.clone().unwrap()["name"].to_string();
+                                    let res = hal_client.clone().delete(&(broker_url.clone() + "/environments/" + &uuid)).await;
+                                    match res {
+                                        Ok(_) => {
+                                            println!("✅ Deleted environment {} from the Pact Broker with UUID {}", Colour::Green.paint(name), Colour::Green.paint(uuid.trim_matches('"')));
+                                            std::process::exit(0);
+                                        }
+                                        Err(err) => {
+                                            match err {
+                                                PactBrokerError::LinkError(error) => {
+                                                    println!("❌ {}", Colour::Red.paint(error));
+                                                    std::process::exit(1);
+                                                }
+                                                PactBrokerError::ContentError(error) => {
+                                                    println!("❌ {}", Colour::Red.paint(error));
+                                                    std::process::exit(1);
+                                                }
+                                                PactBrokerError::IoError(error) => {
+                                                    println!("❌ {}", Colour::Red.paint(error));
+                                                    std::process::exit(1);
+                                                }
+                                                PactBrokerError::NotFound(error) => {
+                                                    println!("❌ {}", Colour::Red.paint(error));
+                                                    std::process::exit(1);
+                                                }
+                                                PactBrokerError::ValidationError(errors) => {
+                                                    for error in errors {
+                                                        println!("❌ {}", Colour::Red.paint(error));
+                                                    }
+                                                    std::process::exit(1);
+                                                }
+                                                _ => {
+                                                    println!("❌ {}", Colour::Red.paint(err.to_string()));
+                                                    std::process::exit(1);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                Err(err) => {
+                                    match err {
+                                        PactBrokerError::LinkError(error) => {
+                                            println!("❌ {}", Colour::Red.paint(error));
+                                            std::process::exit(1);
+                                        }
+                                        PactBrokerError::ContentError(error) => {
+                                            println!("❌ {}", Colour::Red.paint(error));
+                                            std::process::exit(1);
+                                        }
+                                        PactBrokerError::IoError(error) => {
+                                            println!("❌ {}", Colour::Red.paint(error));
+                                            std::process::exit(1);
+                                        }
+                                        PactBrokerError::NotFound(error) => {
+                                            println!("❌ {}", Colour::Red.paint(error));
+                                            std::process::exit(1);
+                                        }
+                                        PactBrokerError::ValidationError(errors) => {
+                                            for error in errors {
+                                                println!("❌ {}", Colour::Red.paint(error));
+                                            }
+                                            std::process::exit(1);
+                                        }
+                                        _ => {
+                                            println!("❌ {}", Colour::Red.paint(err.to_string()));
+                                            std::process::exit(1);
+                                        }
+                                    }
+                                }
+                            }
+
+                        })
                         }
                         Some(("list-environments", args)) => {
-                            // Handle list-environments command
-                            // Ok(());
+                            let broker_url = get_broker_url(args);
+                            let auth = get_auth(args);
+                            tokio::runtime::Runtime::new().unwrap().block_on(async {
+                                let hal_client: HALClient =
+                                    HALClient::with_url(&broker_url, Some(auth.clone()));
+                                let res = hal_client.fetch(&(broker_url + "/environments/")).await;
+
+                                let default_output = "text".to_string();
+                                let output =
+                                    args.get_one::<String>("output").unwrap_or(&default_output);
+                                match res {
+                                    Ok(res) => {
+                                        if output == "pretty" {
+                                            let json = serde_json::to_string_pretty(&res).unwrap();
+                                            println!("{}", json);
+                                        } else if output == "json" {
+                                            println!("{}", serde_json::to_string(&res).unwrap());
+                                        } else {
+                                            let mut table = Table::new();
+
+                                            #[derive(Debug, serde::Deserialize)]
+                                            struct Environment {
+                                                uuid: String,
+                                                name: String,
+                                                displayName: String,
+                                                production: bool,
+                                                createdAt: String,
+                                            }
+
+                                            table.load_preset(UTF8_FULL).set_header(vec![
+                                                "UUID",
+                                                "NAME",
+                                                "DISPLAY NAME",
+                                                "PRODUCTION",
+                                                "CREATED AT",
+                                            ]);
+
+                                            if let Some(embedded) = res["_embedded"].as_object() {
+                                                if let Some(environments) =
+                                                    embedded["environments"].as_array()
+                                                {
+                                                    for environment in environments {
+                                                        let environment: Environment =
+                                                            serde_json::from_value(
+                                                                environment.clone(),
+                                                            )
+                                                            .unwrap();
+                                                        table.add_row(vec![
+                                                            environment.uuid,
+                                                            environment.name,
+                                                            environment.displayName,
+                                                            environment.production.to_string(),
+                                                            environment.createdAt,
+                                                        ]);
+                                                    }
+                                                }
+                                            }
+
+                                            println!("{table}");
+                                        }
+
+                                        std::process::exit(0);
+                                    }
+                                    Err(err) => {
+                                        match err {
+                                            // TODO process output based on user selection
+                                            PactBrokerError::LinkError(error) => {
+                                                println!("❌ {}", Colour::Red.paint(error));
+                                                std::process::exit(1);
+                                            }
+                                            PactBrokerError::ContentError(error) => {
+                                                println!("❌ {}", Colour::Red.paint(error));
+                                                std::process::exit(1);
+                                            }
+                                            PactBrokerError::IoError(error) => {
+                                                println!("❌ {}", Colour::Red.paint(error));
+                                                std::process::exit(1);
+                                            }
+                                            PactBrokerError::NotFound(error) => {
+                                                println!("❌ {}", Colour::Red.paint(error));
+                                                std::process::exit(1);
+                                            }
+                                            PactBrokerError::ValidationError(errors) => {
+                                                for error in errors {
+                                                    println!("❌ {}", Colour::Red.paint(error));
+                                                }
+                                                std::process::exit(1);
+                                            }
+                                            _ => {
+                                                println!(
+                                                    "❌ {}",
+                                                    Colour::Red.paint(err.to_string())
+                                                );
+                                                std::process::exit(1);
+                                            }
+                                        }
+                                    }
+                                }
+                            })
                         }
                         Some(("record-deployment", args)) => {
                             // Handle record-deployment command
@@ -354,19 +861,17 @@ pub fn main() {
                             // Ok(());
                         }
                         Some(("generate-uuid", args)) => {
-                            // Handle generate-uuid command
-                            // Ok(());
+                            println!("{}", uuid::Uuid::new_v4());
                         }
                         _ => {
                             println!("⚠️  No option provided, try running pact-broker --help");
-                            // Ok(());
                         }
                     }
                 }
                 Some(("pactflow", args)) => {
                     match args.subcommand() {
                         Some(("publish-provider-contract", args)) => {
-                            print!("{:?}", args);
+                            println!("{:?}", args);
 
                             // Ok(());
                         }
@@ -389,7 +894,7 @@ pub fn main() {
                         .to_string();
                     let shell_enum = Shell::from_str(&shell).unwrap();
                     let _ = generate_to(shell_enum, &mut cmd, "pact_cli".to_string(), &out_dir);
-                    print!(
+                    println!(
                         "ℹ️  {} shell completions for pact_cli written to {}",
                         &shell_enum, &out_dir
                     );
@@ -436,7 +941,6 @@ pub fn main() {
                             );
                             let response = reqwest::get(&url).await.unwrap();
                             let body = response.bytes().await.unwrap();
-                        
 
                             let mut file = fs::File::create(&broker_archive_path).unwrap();
                             let _ = file.write_all(&body);
@@ -464,6 +968,208 @@ pub fn main() {
                         Ok::<(), ()>(());
 
                     })
+                }
+                Some(("examples", args)) => {
+                    let project_type = args.get_one::<String>("type").unwrap().as_str();
+                    let project = &args
+                        .get_one::<String>("project")
+                        .map(|project| project.to_string());
+                    let download_all = args.get_flag("all");
+
+                    match project_type {
+                        "bdct" => {
+                            let projects = vec![
+                                "example-bi-directional-consumer-cypress",
+                                "example-bi-directional-provider-postman",
+                                "example-bi-directional-consumer-msw",
+                                "example-bi-directional-provider-dredd",
+                                "example-bi-directional-provider-restassured",
+                                "example-bi-directional-consumer-wiremock",
+                                "example-bi-directional-consumer-nock",
+                                "example-bi-directional-consumer-mountebank",
+                                "example-bi-directional-consumer-dotnet",
+                                "example-bi-directional-provider-dotnet",
+                            ];
+
+                            if download_all {
+                                for project in projects {
+                                    download_project(project);
+                                }
+                            } else if let Some(project) = project {
+                                download_project(project);
+                            } else {
+                                println!("Please specify a project to download");
+                                for project in projects {
+                                    println!("{}", project);
+                                }
+                            }
+                        }
+                        "cdct" => {
+                            let projects = vec![
+                                "example-siren",
+                                "example-provider",
+                                "example-consumer",
+                                "example-consumer-js-kafka",
+                                "example-consumer-cypress",
+                                "example-consumer-python",
+                                "example-consumer-golang",
+                                "example-consumer-java-kafka",
+                                "example-consumer-java-junit",
+                                "example-consumer-java-soap",
+                                "example-consumer-dotnet",
+                                "example-provider-golang",
+                                "example-provider-springboot",
+                                "example-provider-java-soap",
+                                "example-provider-java-kafka",
+                                "example-consumer-js-sns",
+                                "example-provider-js-sns",
+                                "example-provider-python",
+                                "example-consumer-webhookless",
+                                "example-provider-dotnet",
+                                "pactflow-jsonschema-example",
+                                "provider-driven-example",
+                                "injected-provider-states-example",
+                            ];
+
+                            if download_all {
+                                for project in projects {
+                                    download_project(project);
+                                }
+                            } else if let Some(project) = project {
+                                download_project(project);
+                            } else {
+                                println!("Please specify a project to download");
+                                for project in projects {
+                                    println!("{}", project);
+                                }
+                            }
+                        }
+                        "workshops" => {
+                            let projects = vec![
+                                "pact-workshop-js",
+                                "pact-workshop-jvm-spring",
+                                "pact-workshop-dotnet-core-v1",
+                                "pact-workshop-Maven-Springboot-JUnit5",
+                                "pact-workshop-go",
+                            ];
+                            let org = "pact-foundation";
+
+                            if download_all {
+                                for project in projects {
+                                    download_project_with_org(org, project);
+                                }
+                            } else if let Some(project) = project {
+                                download_project_with_org(org, project);
+                            } else {
+                                println!("Please specify a project to download");
+                                for project in projects {
+                                    println!("{}", project);
+                                }
+                            }
+                        }
+                        _ => {
+                            println!("Sorry, you'll need to specify a valid option (bdct, cdct, workshops)");
+                        }
+                    }
+
+                    fn download_project(project: &str) {
+                        println!("Downloading {}", project);
+                        // Implement the logic to download the project here
+                        println!("Downloaded {}", project);
+                    }
+
+                    fn download_project_with_org(org: &str, project: &str) {
+                        println!("Downloading project {}", project);
+                        // Implement the logic to download the project with the specified organization here
+                        println!("Downloaded project {}", project);
+                    }
+                }
+                Some(("project", args)) => {
+                    let language = args.get_one::<String>("language").unwrap().as_str();
+                    match args.subcommand() {
+                        Some(("install", args)) => {
+                            match language {
+                                "js" => {
+                                    println!("To install Pact-JS, run the following command:");
+                                    println!("`npm install @pact-foundation/pact`");
+                                }
+                                "golang" => {
+                                    println!("To install Pact-Go, run the following command:");
+                                    println!(
+                                        "`go get github.com/pact-foundation/pact-go/v2@2.x.x`"
+                                    );
+                                    println!("# NOTE: If using Go 1.19 or later, you need to run go install instead");
+                                    println!(
+                                        "# go install github.com/pact-foundation/pact-go/v2@2.x.x"
+                                    );
+                                    println!("# download and install the required libraries. The pact-go will be installed into $GOPATH/bin, which is $HOME/go/bin by default.");
+                                    println!("pact-go -l DEBUG install");
+                                    println!("# 🚀 now write some tests!");
+                                }
+                                "ruby" => {
+                                    println!("To install Pact-Ruby, run the following command:");
+                                    println!("Add this line to your application's Gemfile:");
+                                    println!("gem 'pact'");
+                                    println!("# gem 'pact-consumer-minitest' for minitest");
+                                    println!("And then execute:");
+                                    println!("$ bundle");
+                                    println!("Or install it yourself as:");
+                                    println!("$ gem install pact");
+                                }
+                                "python" => {
+                                    println!("To install Pact-Python, run the following command:");
+                                    println!("`pip install pact-python`");
+                                }
+                                "java" => {
+                                    println!("To install Pact-JVM, add the following dependency to your build file:");
+                                    println!("`testImplementation 'au.com.dius.pact.consumer:junit5:4.6.5'`");
+                                    println!("`testImplementation 'au.com.dius.pact.provider:junit5:4.6.5'`");
+                                }
+                                ".net" => {
+                                    println!("To install Pact-.NET, add the following package to your project:");
+                                    println!("`dotnet add package PactNet --version 4.5.0`");
+                                }
+                                "rust" => {
+                                    println!("To install Pact-Rust, add the following dependency to your Cargo.toml file:");
+                                    println!("`pact_consumer = \"0.0.1\"`");
+                                    println!("`pact_verifier = \"0.0.1\"`");
+                                    println!("`pact_models = \"0.0.1\"`");
+                                    println!("`pact_matching = \"0.0.1\"`");
+                                }
+                                "php" => {
+                                    println!("To install Pact-PHP, add the following dependency to your composer.json file:");
+                                    println!("`\"pact-foundation/pact-php\": \"^9.0\"`");
+                                    println!("To try out Pact-PHP build with the pact rust core:");
+                                    println!("`\"pact-foundation/pact-php\": \"^10.0.0-alpha6\"`");
+                                }
+                                _ => {
+                                    println!("⚠️  Invalid option provided");
+                                    // Ok(());
+                                }
+                            }
+                        }
+                        Some(("new", args)) => {
+                            // Handle delete command
+                            // Ok(());
+                        }
+                        Some(("link", args)) => {
+                            // Handle list command
+                            // Ok(());
+                        }
+                        Some(("issue", args)) => {
+                            // Handle update command
+                            // Ok(());
+                        }
+                        Some(("docs", args)) => {
+                            // Handle update command
+                            // Ok(());
+                        }
+                        _ => {
+                            println!("⚠️  No option provided, try running project --help");
+
+                            // Ok(());
+                        }
+                    }
                 }
                 Some(("docker", args)) => {
                     match args.subcommand() {
