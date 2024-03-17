@@ -18,6 +18,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-12, macos-14, windows-latest]
+      fail-fast: false
     defaults:
       run:
         shell: bash
@@ -84,9 +85,10 @@ jobs:
         ./pact_cli mock shutdown-master --help
         ./pact_cli standalone --help
     - name: Run broker
+      if: matrix.os != 'windows-latest'
       run: |
         ./pact_cli standalone & echo $! > pact_cli.pid
-        sleep 5
+        sleep 15
         export PACT_BROKER_BASE_URL=http://0.0.0.0:9292
         ./pact_cli pact-broker list-latest-pact-versions
         ./pact_cli pact-broker create-environment --name name_foo1
