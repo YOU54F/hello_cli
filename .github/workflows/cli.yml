@@ -17,7 +17,8 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-12, macos-14, windows-latest]
+        # os: [ubuntu-latest, macos-12, macos-14, windows-latest]
+        os: [windows-latest]
       fail-fast: false
     defaults:
       run:
@@ -112,4 +113,4 @@ jobs:
         curl -LO https://github.com/YOU54F/pact-ruby-standalone/releases/download/v3.0.0/pact-broker-app.exe.gz
         gunzip pact-broker-app.exe.gz
         ls -l
-        pact-broker-app.exe
+        ./pact-broker-app.exe
