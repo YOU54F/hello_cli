@@ -286,6 +286,8 @@ Options:
           The name of the environment that the pacticipant version was deployed to
       --application-instance <APPLICATION_INSTANCE>
           Optional. The application instance to which the deployment has occurred - a logical identifer required to differentiate deployments when there are multiple instances of the same application in an environment. This field was called 'target' in a beta release
+  -o, --output <OUTPUT>
+          Value must be one of ["json", "text", "pretty"] [default: text] [possible values: json, text, pretty]
   -b, --broker-base-url <PACT_BROKER_BASE_URL>
           The base URL of the Pact Broker [env: PACT_BROKER_BASE_URL=]
   -u, --broker-username <PACT_BROKER_USERNAME>
@@ -307,31 +309,53 @@ Record deployment of a pacticipant version to an environment. See https://docs.p
 
 ```console
 $ pact_cli pact-broker record-undeployment --help
-Record undeployment of a pacticipant version from an environment
+Record undeployment of a pacticipant version from an environment.
+
+Note that use of this command is only required if you are permanently removing an application instance from an environment. It is not required if you are deploying over a previous version, as record-deployment will automatically mark the previously deployed version as undeployed for you. See https://docs.pact.io/go/record-undeployment for more information.
 
 Usage: pact_cli pact-broker record-undeployment [OPTIONS] --pacticipant <PACTICIPANT> --environment <ENVIRONMENT> --broker-base-url <PACT_BROKER_BASE_URL>
 
 Options:
   -a, --pacticipant <PACTICIPANT>
           The name of the pacticipant that was undeployed
+
       --environment <ENVIRONMENT>
           The name of the environment that the pacticipant version was undeployed from
+
       --application-instance <APPLICATION_INSTANCE>
           Optional. The application instance from which the application is being undeployed - a logical identifer required to differentiate deployments when there are multiple instances of the same application in an environment. This field was called 'target' in a beta release
-      --target <TARGET>
-          Optional. The target that the application is being undeployed from - a logical identifer required to differentiate deployments when there are multiple instances of the same application in an environment
+
   -b, --broker-base-url <PACT_BROKER_BASE_URL>
-          The base URL of the Pact Broker [env: PACT_BROKER_BASE_URL=]
+          The base URL of the Pact Broker
+          
+          [env: PACT_BROKER_BASE_URL=]
+
   -u, --broker-username <PACT_BROKER_USERNAME>
-          Pact Broker basic auth username [env: PACT_BROKER_USERNAME=]
+          Pact Broker basic auth username
+          
+          [env: PACT_BROKER_USERNAME=]
+
   -p, --broker-password <PACT_BROKER_PASSWORD>
-          Pact Broker basic auth password [env: PACT_BROKER_PASSWORD=]
+          Pact Broker basic auth password
+          
+          [env: PACT_BROKER_PASSWORD=]
+
   -k, --broker-token <PACT_BROKER_TOKEN>
-          Pact Broker bearer token [env: PACT_BROKER_TOKEN=]
+          Pact Broker bearer token
+          
+          [env: PACT_BROKER_TOKEN=]
+
   -v, --verbose
           Verbose output.
+
+  -o, --output <OUTPUT>
+          Value must be one of ["json", "text", "pretty"]
+          
+          [default: text]
+          [possible values: json, text, pretty]
+
   -h, --help
-          Print help
+          Print help (see a summary with '-h')
 
 ```
 
@@ -358,7 +382,7 @@ Options:
       --environment <ENVIRONMENT>
           The name of the environment that the pacticipant version was released to.
   -o, --output <OUTPUT>
-          Value must be one of ["json", "text"] [default: text] [possible values: json, text]
+          Value must be one of ["json", "text", "pretty"] [default: text] [possible values: json, text, pretty]
   -b, --broker-base-url <PACT_BROKER_BASE_URL>
           The base URL of the Pact Broker [env: PACT_BROKER_BASE_URL=]
   -u, --broker-username <PACT_BROKER_USERNAME>
@@ -392,7 +416,7 @@ Options:
       --environment <ENVIRONMENT>
           The name of the environment in which the support is ended.
   -o, --output <OUTPUT>
-          Value must be one of ["json", "text"] [default: text] [possible values: json, text]
+          Value must be one of ["json", "text", "pretty"] [default: text] [possible values: json, text, pretty]
   -b, --broker-base-url <PACT_BROKER_BASE_URL>
           The base URL of the Pact Broker [env: PACT_BROKER_BASE_URL=]
   -u, --broker-username <PACT_BROKER_USERNAME>
@@ -416,47 +440,129 @@ Record the end of support for a pacticipant version in an environment. See https
 
 ```console
 $ pact_cli pact-broker can-i-deploy --help
-Check if a pacticipant can be deployed.
+    Check if a pacticipant can be deployed.
+
+    Description:
+    Returns exit code 0 or 1, indicating whether or not the specified application (pacticipant) has a successful verification result with
+    each of the application versions that are already deployed to a particular environment. Prints out the relevant pact/verification
+    details, indicating any missing or failed verification results.
+  
+    The can-i-deploy tool was originally written to support specifying versions and dependencies using tags. This usage has now been
+    superseded by first class support for environments, deployments and releases. For documentation on how to use can-i-deploy with tags,
+    please see https://docs.pact.io/pact_broker/client_cli/can_i_deploy_usage_with_tags/
+  
+    Before `can-i-deploy` can be used, the relevant environment resources must first be created in the Pact Broker using the
+    `create-environment` command. The 'test' and 'production' environments will have been seeded for you. You can check the existing
+    environments by running `pact-broker list-environments`. See https://docs.pact.io/pact_broker/client_cli/readme#environments for more
+    information.
+  
+    $ pact-broker create-environment --name 'uat' --display-name 'UAT' --no-production
+  
+    After an application is deployed or released, its deployment must be recorded using the `ecord-deployment` or `ecord-release`
+    commands. See https://docs.pact.io/pact_broker/recording_deployments_and_releases/ for more information.
+  
+    $ pact-broker record-deployment --pacticipant Foo --version 173153ae0 --environment uat
+  
+    Before an application is deployed or released to an environment, the can-i-deploy command must be run to check that the application
+    version is safe to deploy with the versions of each integrated application that are already in that environment.
+  
+    $ pact-broker can-i-deploy --pacticipant PACTICIPANT --version VERSION --to-environment ENVIRONMENT
+  
+    Example: can I deploy version 173153ae0 of application Foo to the test environment?
+  
+    $ pact-broker can-i-deploy --pacticipant Foo --version 173153ae0 --to-environment test
+  
+    Can-i-deploy can also be used to check if arbitrary versions have a successful verification. When asking 'Can I deploy this
+    application version with the latest version from the main branch of another application' it functions as a 'can I merge' check.
+  
+    $ pact-broker can-i-deploy --pacticipant Foo 173153ae0 // --pacticipant Bar --latest main
+  
+    ##### Polling
+  
+    If the verification process takes a long time and there are results missing when the can-i-deploy command runs in your CI/CD pipeline,
+    you can configure the command to poll and wait for the missing results to arrive. The arguments to specify are `--retry-while-unknown
+    TIMES` and `--retry-interval SECONDS`, set to appropriate values for your pipeline.
+    
 
 Usage: pact_cli pact-broker can-i-deploy [OPTIONS] --pacticipant [<PACTICIPANT>] --broker-base-url <PACT_BROKER_BASE_URL>
 
 Options:
   -a, --pacticipant [<PACTICIPANT>]
           The pacticipant name. Use once for each pacticipant being checked.
+
   -e, --version <VERSION>
           The pacticipant version. Must be entered after the --pacticipant that it relates to.
-      --ignore [<PACTICIPANT>]
+
+      --ignore
           The pacticipant name to ignore. Use once for each pacticipant being ignored. A specific version can be ignored by also specifying a --version after the pacticipant name option. The environment variable PACT_BROKER_CAN_I_DEPLOY_IGNORE may also be used to specify a pacticipant name to ignore, with commas to separate multiple pacticipant names if necessary.
-  -l, --latest <TAG>
+
+  -l, --latest
           Use the latest pacticipant version. Optionally specify a TAG to use the latest version with the specified tag.
+
       --branch <BRANCH>
           The branch of the version for which you want to check the verification results.
-      --main-branch <main-branch>
+
+      --main-branch
           Use the latest version of the configured main branch of the pacticipant as the version for which you want to check the verification results
+
+      --no-main-branch
+          No main branch of the pacticipant as the version for which you want to check the verification results
+
+      --skip-main-branch
+          Skip the configured main branch of the pacticipant as the version for which you want to check the verification results
+
       --to-environment <ENVIRONMENT>
           The environment into which the pacticipant(s) are to be deployed
-      --to <TAG>
+
+      --to <TO>
           The tag that represents the branch or environment of the integrated applications for which you want to check the verification result status.
+
   -o, --output <OUTPUT>
-          Value must be one of ["json", "table"] [default: table] [possible values: json, table]
+          Value must be one of ["json", "table"]
+          
+          [default: table]
+          [possible values: json, table]
+
       --retry-while-unknown <TIMES>
           The number of times to retry while there is an unknown verification result (ie. the provider verification is likely still running)
+
       --retry-interval <SECONDS>
           The time between retries in seconds. Use in conjuction with --retry-while-unknown
-      --dry-run <dry-run>
+
+      --dry-run
           When dry-run is enabled, always exit process with a success code. Can also be enabled by setting the environment variable PACT_BROKER_CAN_I_DEPLOY_DRY_RUN=true. This mode is useful when setting up your CI/CD pipeline for the first time, or in a 'break glass' situation where you need to knowingly deploy what Pact considers a breaking change. For the second scenario, it is recommended to use the environment variable and just set it for the build required to deploy that particular version, so you don't accidentally leave the dry run mode enabled.
+
+      --no-dry-run
+          When dry-run is enabled, always exit process with a success code. Can also be enabled by setting the environment variable PACT_BROKER_CAN_I_DEPLOY_DRY_RUN=true. This mode is useful when setting up your CI/CD pipeline for the first time, or in a 'break glass' situation where you need to knowingly deploy what Pact considers a breaking change. For the second scenario, it is recommended to use the environment variable and just set it for the build required to deploy that particular version, so you don't accidentally leave the dry run mode enabled.
+
+      --skip-dry-run
+          When dry-run is enabled, always exit process with a success code. Can also be enabled by setting the environment variable PACT_BROKER_CAN_I_DEPLOY_DRY_RUN=true. This mode is useful when setting up your CI/CD pipeline for the first time, or in a 'break glass' situation where you need to knowingly deploy what Pact considers a breaking change. For the second scenario, it is recommended to use the environment variable and just set it for the build required to deploy that particular version, so you don't accidentally leave the dry run mode enabled.
+
   -b, --broker-base-url <PACT_BROKER_BASE_URL>
-          The base URL of the Pact Broker [env: PACT_BROKER_BASE_URL=]
+          The base URL of the Pact Broker
+          
+          [env: PACT_BROKER_BASE_URL=]
+
   -u, --broker-username <PACT_BROKER_USERNAME>
-          Pact Broker basic auth username [env: PACT_BROKER_USERNAME=]
+          Pact Broker basic auth username
+          
+          [env: PACT_BROKER_USERNAME=]
+
   -p, --broker-password <PACT_BROKER_PASSWORD>
-          Pact Broker basic auth password [env: PACT_BROKER_PASSWORD=]
+          Pact Broker basic auth password
+          
+          [env: PACT_BROKER_PASSWORD=]
+
   -k, --broker-token <PACT_BROKER_TOKEN>
-          Pact Broker bearer token [env: PACT_BROKER_TOKEN=]
+          Pact Broker bearer token
+          
+          [env: PACT_BROKER_TOKEN=]
+
   -v, --verbose
           Verbose output.
+
   -h, --help
-          Print help
+          Print help (see a summary with '-h')
 
 ```
 
