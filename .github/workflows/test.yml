@@ -21,16 +21,8 @@ jobs:
       fail-fast: false
       matrix:
         job:
-          - {
-              target: x86_64-apple-darwin,
-              os: macos-14,
-              use-cross: false
-            }
-          - {
-              target: aarch64-apple-darwin,
-              os: macos-14,
-              use-cross: false
-            }
+          - { target: x86_64-apple-darwin, os: macos-14, use-cross: false }
+          - { target: aarch64-apple-darwin, os: macos-14, use-cross: false }
           - {
               target: x86_64-unknown-linux-gnu,
               os: ubuntu-latest,
@@ -91,31 +83,41 @@ jobs:
               os: ubuntu-latest,
               use-cross: true
             }
+
+
+          # Fails to build when Ring is included
+          # https://github.com/briansmith/ring/issues/1303
           # - {
           #     target: i586-unknown-linux-gnu,
           #     os: ubuntu-latest,
           #     use-cross: true
           #   }
+
+
           - {
               target: i686-unknown-linux-gnu,
               os: ubuntu-latest,
               use-cross: true
             }
+
+          # awaiting pr's for bsd targets
+          # https://github.com/stanislav-tkach/os_info/issues/370
           - {
               target: x86_64-unknown-netbsd,
               os: ubuntu-latest,
               use-cross: true
             }
-          # - {
-          #     target: x86_64-unknown-freebsd,
-          #     os: ubuntu-latest,
-          #     use-cross: true
-          #   }
+          - {
+              target: x86_64-unknown-freebsd,
+              os: ubuntu-latest,
+              use-cross: true
+            }
           - {
               target: aarch64-unknown-freebsd,
               os: ubuntu-latest,
               use-cross: true
             }
+
           - {
               target: armv5te-unknown-linux-gnueabi,
               os: ubuntu-latest,
@@ -141,16 +143,8 @@ jobs:
               os: ubuntu-latest,
               use-cross: true
             }
-          - {
-              target: i686-linux-android,
-              os: ubuntu-latest,
-              use-cross: true
-            }
-          - {
-              target: x86_64-linux-android,
-              os: ubuntu-latest,
-              use-cross: true
-            }
+          - { target: i686-linux-android, os: ubuntu-latest, use-cross: true }
+          - { target: x86_64-linux-android, os: ubuntu-latest, use-cross: true }
           - {
               target: thumbv7neon-linux-androideabi,
               os: ubuntu-latest,
@@ -182,6 +176,8 @@ jobs:
               use-cross: false
             }
     runs-on: ${{matrix.job.os}}
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v3
       - name: Install Rust Toolchain Components
@@ -212,16 +208,17 @@ jobs:
       - name: Build with cross
         if: ${{ matrix.job.use-cross == true }}
         run: |
-          if [[ ${{ matrix.job.target }} == *"android"* ]] || [[ ${{ matrix.job.target }} == "x86_64-unknown-netbsd" ]] || [[ ${{ matrix.job.target }} == "x86_64-pc-windows-gnu" ]]; then
-            echo "Android target detected"
+          if [[ ${{ matrix.job.target }} == *"android"* ]] || [[ ${{ matrix.job.target }} == "x86_64-unknown-netbsd" ]] || [[ ${{ matrix.job.target }} == "x86_64-pc-windows-gnu" ]] || [[ ${{ matrix.job.target }} == "x86_64-unknown-freebsd" ]]; then
+            echo "installing latest cross"
             cargo install cross --git https://github.com/cross-rs/cross
           else
             cargo install cross@0.2.5
           fi
           if [[ ${{ matrix.job.target }} == "aarch64-unknown-freebsd" ]]; then
             echo "building with cargo nightly, plus std and core for aarch64-unknown-freebsd"
+            sudo apt install libstd-rust-dev
             cargo +nightly install cross --git https://github.com/cross-rs/cross
-            cross +nightly build -Z build-std=std,core --bin ${{ env.BINARY_APP_NAME }} --profile release-aarch64-freebsd --target=${{ matrix.job.target }}
+            cross +nightly build -Z build-std=std,core,alloc,proc_macro --bin ${{ env.BINARY_APP_NAME }} --profile release-aarch64-freebsd --target=${{ matrix.job.target }}
             mv target/aarch64-unknown-freebsd/release-aarch64-freebsd target/aarch64-unknown-freebsd/release
           else
             cross build --bin ${{ env.BINARY_APP_NAME }} --release --target=${{ matrix.job.target }}
@@ -248,28 +245,39 @@ jobs:
         with:
           name: ${{ steps.dist.outputs.BINARY_NAME }}
           path: dist/
-
-  release:
-    name: '📦 Github release'
-    if: |
-      github.ref == 'refs/heads/main'
-    needs:
-      - build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      discussions: write
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/download-artifact@master
       - name: Publish archives and packages
         uses: softprops/action-gh-release@master
         with:
-          tag_name: 'v0.0.0'
-          name: 'Release v0.0.0'
+          tag_name: 'v0.0.1'
+          name: 'Release v0.0.1'
           generate_release_notes: false
-          body: 'Release v0.0.0'
+          body: 'Release v0.0.1'
           files: |
             */${{ env.BINARY_APP_NAME }}*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # release:
+  #   name: '📦 Github release'
+  #   if: |
+  #     github.ref == 'refs/heads/main'
+  #   needs:
+  #     - build
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: write
+  #     discussions: write
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - uses: actions/download-artifact@master
+  #     - name: Publish archives and packages
+  #       uses: softprops/action-gh-release@master
+  #       with:
+  #         tag_name: 'v0.0.0'
+  #         name: 'Release v0.0.0'
+  #         generate_release_notes: false
+  #         body: 'Release v0.0.0'
+  #         files: |
+  #           */${{ env.BINARY_APP_NAME }}*
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

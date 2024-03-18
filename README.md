@@ -14,7 +14,7 @@ Download the latest [pact-ruby-standalone][pact-ruby-standalone] package. You do
 
 To connect to a Pact Broker that uses custom SSL cerificates, set the environment variable `$SSL_CERT_FILE` or `$SSL_CERT_DIR` to a path that contains the appropriate certificate. Read more at https://docs.pact.io/pact_broker/advanced_topics/using-tls#for-non-jvm
 
-## Usage - CLI
+## Pact Broker CLI
 
 All commands prefixed with `pact-broker` can be used with the OSS Pact Broker and PactFlow. Commands prefixed with `pactflow` can only be used with PactFlow.
 
@@ -25,10 +25,6 @@ Pact Broker authentication can be performed either using basic auth or a bearer 
 Basic auth parameters can be specified using the `$PACT_BROKER_USERNAME` and `$PACT_BROKER_PASSWORD` environment variables, or the `-u` or `--broker-username` and `-p` or `--broker-password` parameters.
 
 Authentication using a bearer token can be specified using the environment variable `$PACT_BROKER_TOKEN` or the `-k` or `--broker-token` parameters. This bearer token authentication is used by [PactFlow](https://pactflow.io) and is not available in the [OSS Pact Broker](https://docs.pact.io/pact_broker/), which only supports basic auth.
-
-
-
-
 
 ### Pacts
 
@@ -67,7 +63,7 @@ Options:
       --merge
           If a pact already exists for this consumer version and provider, merge the contents. Useful when running Pact tests concurrently on different build nodes.
   -o, --output <OUTPUT>
-          json or text [default: text] [possible values: json, text]
+          Value must be one of ["json", "text"] [default: text] [possible values: json, text]
   -v, --verbose
           Verbose output.
   -h, --help
@@ -97,7 +93,7 @@ Options:
   -v, --verbose
           Verbose output.
   -o, --output <OUTPUT>
-          json or text [default: text] [possible values: json, text]
+          Value must be one of ["json", "table"] [default: table] [possible values: json, table]
   -h, --help
           Print help
 
@@ -120,14 +116,14 @@ Options:
           The uniquely identifying name of the environment as used in deployment code
       --display-name <DISPLAY_NAME>
           The display name of the environment
-      --production <production>
+      --production
           Whether or not this environment is a production environment. This is currently informational only.
       --contact-name <CONTACT_NAME>
           The name of the team/person responsible for this environment
       --contact-email-address <CONTACT_EMAIL_ADDRESS>
           The email address of the team/person responsible for this environment
   -o, --output <OUTPUT>
-          json or text [default: text] [possible values: json, text]
+          Value must be one of ["json", "text", "id"] [default: text] [possible values: json, text, id]
   -b, --broker-base-url <PACT_BROKER_BASE_URL>
           The base URL of the Pact Broker [env: PACT_BROKER_BASE_URL=]
   -u, --broker-username <PACT_BROKER_USERNAME>
@@ -160,14 +156,14 @@ Options:
           The uniquely identifying name of the environment as used in deployment code
       --display-name <DISPLAY_NAME>
           The display name of the environment
-      --production <production>
+      --production
           Whether or not this environment is a production environment. This is currently informational only.
       --contact-name <CONTACT_NAME>
           The name of the team/person responsible for this environment
       --contact-email-address <CONTACT_EMAIL_ADDRESS>
           The email address of the team/person responsible for this environment
   -o, --output <OUTPUT>
-          json or text [default: text] [possible values: json, text]
+          Value must be one of ["json", "text", "id"] [default: text] [possible values: json, text, id]
   -b, --broker-base-url <PACT_BROKER_BASE_URL>
           The base URL of the Pact Broker [env: PACT_BROKER_BASE_URL=]
   -u, --broker-username <PACT_BROKER_USERNAME>
@@ -197,7 +193,7 @@ Options:
       --uuid <UUID>
           The UUID of the environment to describe
   -o, --output <OUTPUT>
-          json or text [default: text] [possible values: json, text]
+          Value must be one of ["json", "text"] [default: text] [possible values: json, text]
   -b, --broker-base-url <PACT_BROKER_BASE_URL>
           The base URL of the Pact Broker [env: PACT_BROKER_BASE_URL=]
   -u, --broker-username <PACT_BROKER_USERNAME>
@@ -226,8 +222,6 @@ Usage: pact_cli pact-broker delete-environment [OPTIONS] --uuid <UUID> --broker-
 Options:
       --uuid <UUID>
           The UUID of the environment to delete
-  -o, --output <OUTPUT>
-          json or text [default: text] [possible values: json, text]
   -b, --broker-base-url <PACT_BROKER_BASE_URL>
           The base URL of the Pact Broker [env: PACT_BROKER_BASE_URL=]
   -u, --broker-username <PACT_BROKER_USERNAME>
@@ -255,7 +249,7 @@ Usage: pact_cli pact-broker list-environments [OPTIONS] --broker-base-url <PACT_
 
 Options:
   -o, --output <OUTPUT>
-          json or text [default: text] [possible values: json, text]
+          Value must be one of ["json", "text", "pretty"] [default: text] [possible values: json, text, pretty]
   -b, --broker-base-url <PACT_BROKER_BASE_URL>
           The base URL of the Pact Broker [env: PACT_BROKER_BASE_URL=]
   -u, --broker-username <PACT_BROKER_USERNAME>
@@ -364,7 +358,7 @@ Options:
       --environment <ENVIRONMENT>
           The name of the environment that the pacticipant version was released to.
   -o, --output <OUTPUT>
-          json or text [default: text] [possible values: json, text]
+          Value must be one of ["json", "text"] [default: text] [possible values: json, text]
   -b, --broker-base-url <PACT_BROKER_BASE_URL>
           The base URL of the Pact Broker [env: PACT_BROKER_BASE_URL=]
   -u, --broker-username <PACT_BROKER_USERNAME>
@@ -398,7 +392,7 @@ Options:
       --environment <ENVIRONMENT>
           The name of the environment in which the support is ended.
   -o, --output <OUTPUT>
-          json or text [default: text] [possible values: json, text]
+          Value must be one of ["json", "text"] [default: text] [possible values: json, text]
   -b, --broker-base-url <PACT_BROKER_BASE_URL>
           The base URL of the Pact Broker [env: PACT_BROKER_BASE_URL=]
   -u, --broker-username <PACT_BROKER_USERNAME>
@@ -444,7 +438,7 @@ Options:
       --to <TAG>
           The tag that represents the branch or environment of the integrated applications for which you want to check the verification result status.
   -o, --output <OUTPUT>
-          json or text [default: text] [possible values: json, text]
+          Value must be one of ["json", "table"] [default: table] [possible values: json, table]
       --retry-while-unknown <TIMES>
           The number of times to retry while there is an unknown verification result (ie. the provider verification is likely still running)
       --retry-interval <SECONDS>
@@ -479,26 +473,26 @@ Description:
   "test" and "production" environments will have been seeded for you. You can check the existing environments by running `pact-broker list-environments`. See
   https://docs.pact.io/pact_broker/client_cli/readme#environments for more information.
 
-$ pact_cli pact-broker create-environment --name "uat" --display-name "UAT" --no-production
+`$ pact_cli pact-broker create-environment --name "uat" --display-name "UAT" --no-production`
 
   After an application is deployed or released, its deployment must be recorded using the `record-deployment` or `record-release` commands. See
   https://docs.pact.io/pact_broker/recording_deployments_and_releases/ for more information.
 
-$ pact_cli pact-broker record-deployment --pacticipant Foo --version 173153ae0 --environment uat
+`$ pact_cli pact-broker record-deployment --pacticipant Foo --version 173153ae0 --environment uat`
 
   Before an application is deployed or released to an environment, the can-i-deploy command must be run to check that the application version is safe to deploy
   with the versions of each integrated application that are already in that environment.
 
-$ pact_cli pact-broker can-i-deploy --pacticipant PACTICIPANT --version VERSION --to-environment ENVIRONMENT
+`$ pact_cli pact-broker can-i-deploy --pacticipant PACTICIPANT --version VERSION --to-environment ENVIRONMENT`
 
   Example: can I deploy version 173153ae0 of application Foo to the test environment?
 
-$ pact_cli pact-broker can-i-deploy --pacticipant Foo --version 173153ae0 --to-environment test
+`$ pact_cli pact-broker can-i-deploy --pacticipant Foo --version 173153ae0 --to-environment test`
 
   Can-i-deploy can also be used to check if arbitrary versions have a successful verification. When asking "Can I deploy this application version with the
   latest version from the main branch of another application" it functions as a "can I merge" check.
 
-$ pact_cli pact-broker can-i-deploy --pacticipant Foo 173153ae0 \ --pacticipant Bar --latest main
+`$ pact_cli pact-broker can-i-deploy --pacticipant Foo 173153ae0 \ --pacticipant Bar --latest main`
 
 ##### Polling
 
@@ -528,7 +522,7 @@ Options:
   -e, --version <VERSION>
           The pacticipant version. Must be entered after the --pacticipant that it relates to.
   -o, --output <OUTPUT>
-          json or text [default: text] [possible values: json, text]
+          Value must be one of ["json", "table"] [default: table] [possible values: json, table]
       --retry-while-unknown <TIMES>
           The number of times to retry while there is an unknown verification result (ie. the provider verification is likely still running) [default: 0]
       --retry-interval <SECONDS>
@@ -573,7 +567,7 @@ Options:
       --repository-url <REPOSITORY_URL>
           The repository URL of the pacticipant
   -o, --output <OUTPUT>
-          json or text [default: text] [possible values: json, text]
+          Value must be one of ["json", "text"] [default: text] [possible values: json, text]
   -v, --verbose
           Verbose output.
   -h, --help
@@ -603,7 +597,7 @@ Options:
       --name <NAME>
           Pacticipant name
   -o, --output <OUTPUT>
-          json or text [default: text] [possible values: json, text]
+          Value must be one of ["json", "text"] [default: text] [possible values: json, text]
   -v, --verbose
           Verbose output.
   -h, --help
@@ -631,7 +625,7 @@ Options:
   -k, --broker-token <PACT_BROKER_TOKEN>
           Pact Broker bearer token [env: PACT_BROKER_TOKEN=]
   -o, --output <OUTPUT>
-          json or text [default: text] [possible values: json, text]
+          Value must be one of ["json", "text"] [default: text] [possible values: json, text]
   -v, --verbose
           Verbose output.
   -h, --help
@@ -880,7 +874,7 @@ Options:
   -a, --pacticipant <PACTICIPANT>  The name of the pacticipant that the version belongs to
   -e, --version <VERSION>          The pacticipant version number
   -l, --latest <TAG>               Describe the latest pacticipant version. Optionally specify a TAG to describe the latest version with the specified tag
-  -o, --output <OUTPUT>            json or text [default: text] [possible values: json, text]
+  -o, --output <OUTPUT>            Value must be one of ["json", "table", "id"] [default: table] [possible values: json, table, id]
   -h, --help                       Print help
 
 ```
@@ -900,7 +894,7 @@ Options:
   -e, --version <VERSION>          The pacticipant version number
       --branch <BRANCH>            The repository branch name
   -t, --tag [<TAG>]                Tag name for pacticipant version. Can be specified multiple times
-  -o, --output <OUTPUT>            json or text [default: text] [possible values: json, text]
+  -o, --output <OUTPUT>            Value must be one of ["json", "text"] [default: text] [possible values: json, text]
   -h, --help                       Print help
 
 ```
@@ -975,7 +969,7 @@ Options:
       --build-url <BUILD_URL>
           The build URL that created the provider contract
   -o, --output <OUTPUT>
-          json or text [default: text] [possible values: json, text]
+          Value must be one of ["json", "text"] [default: text] [possible values: json, text]
   -v, --verbose
           Verbose output.
   -h, --help
@@ -997,6 +991,10 @@ Commands:
   pact-broker  
   pactflow     
   completions  Generates completion scripts for your shell
+  docker       Run the Pact Broker as a Docker container
+  examples     download example projects
+  project      Pact project actions for setting up and managing pact projects
+  standalone   Install & Run the Pact Broker in $HOME/traveling-broker
   plugin       CLI utility for Pact plugins
   mock         Standalone Pact mock server
   stub         Pact Stub Server 0.1.0
@@ -1060,7 +1058,9 @@ Options:
 
 ```console
 $ pact_cli plugin install --help
-Install a plugin
+Install a plugin 
+
+A plugin can be either installed from a URL, or for a known plugin, by name (and optionally version)
 
 Usage: pact_cli plugin install [OPTIONS] <SOURCE>
 
@@ -1068,16 +1068,11 @@ Arguments:
   <SOURCE>  Where to fetch the plugin files from. This should be a URL or the name of a known plugin.
 
 Options:
-  -t, --source-type <SOURCE_TYPE>
-          The type of source to fetch the plugin files from. Will default to Github releases. [possible values: github]
-  -y, --yes <yes>
-          Automatically answer Yes for all prompts
-  -s, --skip-if-installed <skip_if_installed>
-          Skip installing the plugin if the same version is already installed
-  -v, --version <VERSION>
-          The version to install. This is only used for known plugins.
-  -h, --help
-          Print help
+  -t, --source-type <SOURCE_TYPE>  The type of source to fetch the plugin files from. Will default to Github releases. [possible values: github]
+  -y, --yes                        Automatically answer Yes for all prompts
+  -s, --skip-if-installed          Skip installing the plugin if the same version is already installed
+  -v, --version <VERSION>          The version to install. This is only used for known plugins.
+  -h, --help                       Print help
 
 ```
 
@@ -1085,15 +1080,15 @@ Options:
 $ pact_cli plugin remove --help
 Remove a plugin
 
-Usage: pact_cli plugin remove [OPTIONS] <name> [VERSION]
+Usage: pact_cli plugin remove [OPTIONS] <NAME> [VERSION]
 
 Arguments:
-  <name>     Plugin name
+  <NAME>     Plugin name
   [VERSION]  Plugin version. Not required if there is only one plugin version.
 
 Options:
-  -y, --yes <yes>  Automatically answer Yes for all prompts
-  -h, --help       Print help
+  -y, --yes   Automatically answer Yes for all prompts
+  -h, --help  Print help
 
 ```
 
@@ -1152,10 +1147,10 @@ Options:
 $ pact_cli plugin repository validate --help
 Check the consistency of the repository index file
 
-Usage: pact_cli plugin repository validate [filename]
+Usage: pact_cli plugin repository validate <FILENAME>
 
 Arguments:
-  [filename]  Filename to validate
+  <FILENAME>  Filename to validate
 
 Options:
   -h, --help  Print help
@@ -1166,12 +1161,14 @@ Options:
 $ pact_cli plugin repository new --help
 Create a new blank repository index file
 
-Usage: pact_cli plugin repository new [OPTIONS]
+Usage: pact_cli plugin repository new [OPTIONS] [FILENAME]
+
+Arguments:
+  [FILENAME]  Filename to use for the new file. By default will use repository.index
 
 Options:
-      --filename <filename>  Filename to validate
-      --overwrite             Overwrite any existing file?
-  -h, --help                 Print help
+  -o, --overwrite   Overwrite any existing file?
+  -h, --help       Print help
 
 ```
 
@@ -1179,11 +1176,11 @@ Options:
 $ pact_cli plugin repository add-plugin-version --help
 Add a plugin version to the index file (will update existing entry)
 
-Usage: pact_cli plugin repository add-plugin-version [COMMAND]
+Usage: pact_cli plugin repository add-plugin-version <COMMAND>
 
 Commands:
-  git-hub  Add an entry for a GitHub Release to the repository file
   file     Add an entry for a local plugin manifest file to the repository file
+  git-hub  Add an entry for a GitHub Release to the repository file
   help     Print this message or the help of the given subcommand(s)
 
 Options:
@@ -1210,11 +1207,11 @@ Options:
 $ pact_cli plugin repository add-plugin-version file --help
 Add an entry for a local plugin manifest file to the repository file
 
-Usage: pact_cli plugin repository add-plugin-version file <REPOSITORY_FILE> <URL>
+Usage: pact_cli plugin repository add-plugin-version file <REPOSITORY_FILE> <FILE>
 
 Arguments:
   <REPOSITORY_FILE>  Repository index file to update
-  <URL>              Base URL for GitHub APIs, will default to https://api.github.com/repos/
+  <FILE>             Path to the local plugin manifest file
 
 Options:
   -h, --help  Print help
@@ -1225,13 +1222,13 @@ Options:
 $ pact_cli plugin repository add-all-plugin-versions --help
 Add all versions of a plugin to the index file (will update existing entries)
 
-Usage: pact_cli plugin repository add-all-plugin-versions <REPOSITORY_FILE> <OWNER> <REPOSITORY> [base_url]
+Usage: pact_cli plugin repository add-all-plugin-versions <REPOSITORY_FILE> <OWNER> <REPOSITORY> [BASE_URL]
 
 Arguments:
   <REPOSITORY_FILE>  Repository index file to update
   <OWNER>            Repository owner to load versions from
   <REPOSITORY>       Repository to load versions from
-  [base_url]         Base URL for GitHub APIs, will default to https://api.github.com/repos/
+  [BASE_URL]         Base URL for GitHub APIs, will default to https://api.github.com/repos/
 
 Options:
   -h, --help  Print help
@@ -1274,6 +1271,336 @@ Usage: pact_cli plugin repository list-versions <FILENAME> <NAME>
 Arguments:
   <FILENAME>  Filename to list versions from
   <NAME>      Plugin entry to list versions for
+
+Options:
+  -h, --help  Print help
+
+```
+
+## Pact Mock Server CLI
+
+```console
+$ pact_cli mock --help
+Standalone Pact mock server
+
+Usage: pact_cli mock [OPTIONS] [COMMAND]
+
+Commands:
+  start            Starts the master mock server
+  list             Lists all the running mock servers
+  create           Creates a new mock server from a pact file
+  verify           Verify the mock server by id or port number, and generate a pact file if all ok
+  shutdown         Shutdown the mock server by id or port number, releasing all its resources
+  shutdown-master  Performs a graceful shutdown of the master server (displayed when it started)
+  help             Print this message or the help of the given subcommand(s)
+
+Options:
+      --help                 Print help and exit
+  -v, --version              Print version information and exit
+  -p, --port <port>          port the master mock server runs on (defaults to 8080)
+  -h, --host <host>          hostname the master mock server runs on (defaults to localhost)
+  -l, --loglevel <loglevel>  Log level for mock servers to write to the log file (defaults to info) [possible values: error, warn, info, debug, trace, none]
+      --no-term-log          Turns off using terminal ANSI escape codes
+      --no-file-log          Do not log to an output file
+
+```
+
+```console
+$ pact_cli mock start --help
+Starts the master mock server
+
+Usage: pact_cli mock start [OPTIONS]
+
+Options:
+      --help                     Print help and exit
+  -o, --output <output>          the directory where to write files to (defaults to current directory)
+      --base-port <base-port>    the base port number that mock server ports will be allocated from. If not specified, ports will be randomly assigned by the OS.
+  -v, --version                  Print version information and exit
+  -p, --port <port>              port the master mock server runs on (defaults to 8080)
+      --server-key <server-key>  the server key to use to authenticate shutdown requests (defaults to a random generated one)
+  -h, --host <host>              hostname the master mock server runs on (defaults to localhost)
+  -l, --loglevel <loglevel>      Log level for mock servers to write to the log file (defaults to info) [possible values: error, warn, info, debug, trace, none]
+      --no-term-log              Turns off using terminal ANSI escape codes
+      --no-file-log              Do not log to an output file
+
+```
+
+```console
+$ pact_cli mock list --help
+Lists all the running mock servers
+
+Usage: pact_cli mock list [OPTIONS]
+
+Options:
+      --help                 Print help and exit
+  -v, --version              Print version information and exit
+  -p, --port <port>          port the master mock server runs on (defaults to 8080)
+  -h, --host <host>          hostname the master mock server runs on (defaults to localhost)
+  -l, --loglevel <loglevel>  Log level for mock servers to write to the log file (defaults to info) [possible values: error, warn, info, debug, trace, none]
+      --no-term-log          Turns off using terminal ANSI escape codes
+      --no-file-log          Do not log to an output file
+
+```
+
+```console
+$ pact_cli mock create --help
+Creates a new mock server from a pact file
+
+Usage: pact_cli mock create [OPTIONS] --file <file>
+
+Options:
+  -f, --file <file>          the pact file to define the mock server
+      --help                 Print help and exit
+  -c, --cors-preflight       Handle CORS pre-flight requests
+  -v, --version              Print version information and exit
+  -p, --port <port>          port the master mock server runs on (defaults to 8080)
+  -h, --host <host>          hostname the master mock server runs on (defaults to localhost)
+  -l, --loglevel <loglevel>  Log level for mock servers to write to the log file (defaults to info) [possible values: error, warn, info, debug, trace, none]
+      --no-term-log          Turns off using terminal ANSI escape codes
+      --no-file-log          Do not log to an output file
+
+```
+
+
+```console
+$ pact_cli mock verify --help
+Verify the mock server by id or port number, and generate a pact file if all ok
+
+Usage: pact_cli mock verify [OPTIONS]
+
+Options:
+      --help
+          Print help and exit
+  -i, --mock-server-id <mock-server-id>
+          the ID of the mock server
+  -m, --mock-server-port <mock-server-port>
+          the port number of the mock server
+  -v, --version
+          Print version information and exit
+  -p, --port <port>
+          port the master mock server runs on (defaults to 8080)
+  -h, --host <host>
+          hostname the master mock server runs on (defaults to localhost)
+  -l, --loglevel <loglevel>
+          Log level for mock servers to write to the log file (defaults to info) [possible values: error, warn, info, debug, trace, none]
+      --no-term-log
+          Turns off using terminal ANSI escape codes
+      --no-file-log
+          Do not log to an output file
+
+```
+
+```console
+$ pact_cli mock shutdown --help
+Shutdown the mock server by id or port number, releasing all its resources
+
+Usage: pact_cli mock shutdown [OPTIONS]
+
+Options:
+      --help
+          Print help and exit
+  -i, --mock-server-id <mock-server-id>
+          the ID of the mock server
+  -m, --mock-server-port <mock-server-port>
+          the port number of the mock server
+  -v, --version
+          Print version information and exit
+  -p, --port <port>
+          port the master mock server runs on (defaults to 8080)
+  -h, --host <host>
+          hostname the master mock server runs on (defaults to localhost)
+  -l, --loglevel <loglevel>
+          Log level for mock servers to write to the log file (defaults to info) [possible values: error, warn, info, debug, trace, none]
+      --no-term-log
+          Turns off using terminal ANSI escape codes
+      --no-file-log
+          Do not log to an output file
+
+```
+
+
+```console
+$ pact_cli mock shutdown-master --help
+Performs a graceful shutdown of the master server (displayed when it started)
+
+Usage: pact_cli mock shutdown-master [OPTIONS] --server-key <server-key>
+
+Options:
+      --help                     Print help and exit
+  -k, --server-key <server-key>  the server key of the master server
+      --period <period>          the period of time in milliseconds to allow the server to shutdown (defaults to 100ms)
+  -v, --version                  Print version information and exit
+  -p, --port <port>              port the master mock server runs on (defaults to 8080)
+  -h, --host <host>              hostname the master mock server runs on (defaults to localhost)
+  -l, --loglevel <loglevel>      Log level for mock servers to write to the log file (defaults to info) [possible values: error, warn, info, debug, trace, none]
+      --no-term-log              Turns off using terminal ANSI escape codes
+      --no-file-log              Do not log to an output file
+
+```
+
+## Pact Stub Server CLI
+
+```console
+$ pact_cli stub --help
+Pact Stub Server 0.1.0
+
+Usage: pact_cli stub [OPTIONS]
+
+Options:
+  -l, --loglevel <loglevel>
+          Log level (defaults to info) [default: info] [possible values: error, warn, info, debug, trace, none]
+  -f, --file <file>
+          Pact file to load (can be repeated)
+  -d, --dir <dir>
+          Directory of pact files to load (can be repeated)
+  -e, --extension <ext>
+          File extension to use when loading from a directory (default is json)
+  -u, --url <url>
+          URL of pact file to fetch (can be repeated)
+  -b, --broker-url <broker-url>
+          URL of the pact broker to fetch pacts from [env: PACT_BROKER_BASE_URL=]
+      --user <user>
+          User and password to use when fetching pacts from URLS or Pact Broker in user:password form
+  -t, --token <token>
+          Bearer token to use when fetching pacts from URLS or Pact Broker
+  -p, --port <port>
+          Port to run on (defaults to random port assigned by the OS)
+  -o, --cors
+          Automatically respond to OPTIONS requests and return default CORS headers
+      --cors-referer
+          Set the CORS Access-Control-Allow-Origin header to the Referer
+      --insecure-tls
+          Disables TLS certificate validation
+  -s, --provider-state <provider-state>
+          Provider state regular expression to filter the responses by
+      --provider-state-header-name <provider-state-header-name>
+          Name of the header parameter containing the provider state to be used in case multiple matching interactions are found
+      --empty-provider-state
+          Include empty provider states when filtering with --provider-state
+      --consumer-name <consumer-name>
+          Consumer name or regex to use to filter the Pacts fetched from the Pact broker (can be repeated)
+      --provider-name <provider-name>
+          Provider name or regex to use to filter the Pacts fetched from the Pact broker (can be repeated)
+  -v, --version
+          Print version information
+  -h, --help
+          Print help
+
+```
+
+## Pact Verifier CLI
+
+```console
+$ pact_cli verifier --help
+Usage: pact_cli verifier [OPTIONS]
+
+Options:
+      --help     Print help and exit
+  -v, --version  Print version information and exit
+
+Logging options:
+  -l, --loglevel <loglevel>  Log level to emit log events at (defaults to warn) [possible values: error, warn, info, debug, trace, none]
+      --pretty-log           Emits excessively pretty, multi-line logs, optimized for human readability.
+      --full-log             This emits human-readable, single-line logs for each event that occurs, with the current span context displayed before the formatted representation of the event.
+      --compact-log          Emit logs optimized for short line lengths.
+  -j, --json <json-file>     Generate a JSON report of the verification
+  -x, --junit <junit-file>   Generate a JUnit XML report of the verification (requires the junit feature)
+      --no-colour            Disables ANSI escape codes in the output [aliases: no-color]
+
+Loading pacts options:
+  -f, --file <file>
+          Pact file to verify (can be repeated)
+  -d, --dir <dir>
+          Directory of pact files to verify (can be repeated)
+  -u, --url <url>
+          URL of pact file to verify (can be repeated)
+  -b, --broker-url <broker-url>
+          URL of the pact broker to fetch pacts from to verify (requires the provider name parameter) [env: PACT_BROKER_BASE_URL=]
+      --webhook-callback-url <webhook-callback-url>
+          URL of a Pact to verify via a webhook callback. Requires the broker-url to be set.
+      --ignore-no-pacts-error
+          Do not fail if no pacts are found to verify
+
+Authentication options:
+      --user <user>          Username to use when fetching pacts from URLS [env: PACT_BROKER_USERNAME=]
+      --password <password>  Password to use when fetching pacts from URLS [env: PACT_BROKER_PASSWORD=]
+  -t, --token <token>        Bearer token to use when fetching pacts from URLS [env: PACT_BROKER_TOKEN=]
+
+Provider options:
+  -h, --hostname <hostname>
+          Provider hostname (defaults to localhost)
+  -p, --port <port>
+          Provider port (defaults to protocol default 80/443)
+      --transport <transport>
+          Provider protocol transport to use (http, https, grpc, etc.) [default: http]
+      --transports <transports>
+          Allows multiple protocol transports to be configured (http, https, grpc, etc.) with their associated port numbers separated by a colon. For example, use --transports http:8080 grpc:5555 to configure both.
+  -n, --provider-name <provider-name>
+          Provider name (defaults to provider)
+      --base-path <base-path>
+          Base path to add to all requests
+      --request-timeout <request-timeout>
+          Sets the HTTP request timeout in milliseconds for requests to the target API and for state change requests.
+  -H, --header <custom-header>
+          Add a custom header to be included in the calls to the provider. Values must be in the form KEY=VALUE, where KEY and VALUE contain ASCII characters (32-127) only. Can be repeated.
+      --disable-ssl-verification
+          Disables validation of SSL certificates
+
+Provider state options:
+  -s, --state-change-url <state-change-url>
+          URL to post state change requests to
+      --state-change-as-query
+          State change request data will be sent as query parameters instead of in the request body
+      --state-change-teardown
+          State change teardown requests are to be made after each interaction
+
+Filtering interactions:
+      --filter-description <filter-description>
+          Only validate interactions whose descriptions match this filter (regex format) [env: PACT_DESCRIPTION=]
+      --filter-state <filter-state>
+          Only validate interactions whose provider states match this filter (regex format) [env: PACT_PROVIDER_STATE=]
+      --filter-no-state
+          Only validate interactions that have no defined provider state [env: PACT_PROVIDER_NO_STATE=]
+  -c, --filter-consumer <filter-consumer>
+          Consumer name to filter the pacts to be verified (can be repeated)
+
+Publishing options:
+      --publish
+          Enables publishing of verification results back to the Pact Broker. Requires the broker-url and provider-version parameters.
+      --provider-version <provider-version>
+          Provider version that is being verified. This is required when publishing results.
+      --build-url <build-url>
+          URL of the build to associate with the published verification results.
+      --provider-tags <provider-tags>
+          Provider tags to use when publishing results. Accepts comma-separated values.
+      --provider-branch <provider-branch>
+          Provider branch to use when publishing results
+
+Pact Broker options:
+      --consumer-version-tags <consumer-version-tags>
+          Consumer tags to use when fetching pacts from the Broker. Accepts comma-separated values.
+      --consumer-version-selectors <consumer-version-selectors>
+          Consumer version selectors to use when fetching pacts from the Broker. Accepts a JSON string as per https://docs.pact.io/pact_broker/advanced_topics/consumer_version_selectors/. Can be repeated.
+      --enable-pending
+          Enables Pending Pacts
+      --include-wip-pacts-since <include-wip-pacts-since>
+          Allow pacts that don't match given consumer selectors (or tags) to  be verified, without causing the overall task to fail. For more information, see https://pact.io/wip
+
+```
+
+## Pact Broker Docker
+
+```console
+$ pact_cli docker --help
+Run the Pact Broker as a Docker container
+
+Usage: pact_cli docker [COMMAND]
+
+Commands:
+  start   Start the Pact Broker as a Docker container
+  stop    Stop the Pact Broker Docker container
+  remove  Remove the Pact Broker Docker container
+  help    Print this message or the help of the given subcommand(s)
 
 Options:
   -h, --help  Print help

@@ -1,13 +1,17 @@
 use clap::{Arg, Command};
-mod pact_verifier_cli;
-mod pact_mock_server_cli;
-mod pact_stub_server_cli;
+pub mod pact_mock_server_cli;
+pub mod pact_stub_server_cli;
+pub mod pact_verifier_cli;
 
 pub fn build_cli() -> Command {
     let app = Command::new("pact_cli")
         .about("A pact cli tool")
         .subcommand(
             Command::new("pact-broker")
+                .args(add_output_arguments(
+                    ["json", "text", "table", "pretty"].to_vec(),
+                    "text",
+                ))
                 .subcommand(add_publish_pacts_subcommand())
                 .subcommand(add_list_latest_pact_versions_subcommand())
                 .subcommand(add_create_environment_subcommand())
@@ -35,10 +39,18 @@ pub fn build_cli() -> Command {
         )
         .subcommand(Command::new("pactflow").subcommand(add_publish_provider_contract_subcommand()))
         .subcommand(add_completions_subcommand())
-        .subcommand(add_plugin_cli_subcommand())
+        .subcommand(add_docker_broker_subcommand())
+        .subcommand(add_examples_subcommand())
+        .subcommand(add_project_subcommand())
+        .subcommand(add_standalone_broker_subcommand())
+        .subcommand(add_plugin_cli_subcommand().arg_required_else_help(true))
         .subcommand(pact_mock_server_cli::main::setup_args())
         .subcommand(pact_stub_server_cli::main::build_args())
-        .subcommand(pact_verifier_cli::main::build_args());
+        .subcommand(
+            pact_verifier_cli::main::build_args()
+                .arg_required_else_help(true)
+                .disable_version_flag(true),
+        );
     // Continue adding other subcommands as needed
     // ...
     app
@@ -62,27 +74,38 @@ fn add_completions_subcommand() -> Command {
         .value_parser(clap::builder::NonEmptyStringValueParser::new())
         .help("The directory to write the shell completions to, default is the current directory"))
 }
+fn add_docker_broker_subcommand() -> Command {
+    Command::new("docker")
+        .about("Run the Pact Broker as a Docker container")
+        .subcommand(Command::new("start").about("Start the Pact Broker as a Docker container"))
+        .subcommand(Command::new("stop").about("Stop the Pact Broker Docker container"))
+        .subcommand(Command::new("remove").about("Remove the Pact Broker Docker container"))
+}
+fn add_standalone_broker_subcommand() -> Command {
+    Command::new("standalone").about("Install & Run the Pact Broker in $HOME/traveling-broker")
+}
 
 fn add_plugin_cli_subcommand() -> Command {
     Command::new("plugin") 
+    .arg_required_else_help(true)
     .about("CLI utility for Pact plugins")
     .arg(Arg::new("yes")
         .short('y')
         .long("yes")
         .num_args(0)
-        .action(clap::ArgAction::SetFalse)
+        .action(clap::ArgAction::SetTrue)
         .help("Automatically answer Yes for all prompts"))
     .arg(Arg::new("debug")
         .short('d')
         .long("debug")
         .num_args(0)
-        .action(clap::ArgAction::SetFalse)
+        .action(clap::ArgAction::SetTrue)
         .help("Enable debug level logs"))
     .arg(Arg::new("trace")
         .short('t')
         .long("trace")
         .num_args(0)
-        .action(clap::ArgAction::SetFalse)
+        .action(clap::ArgAction::SetTrue)
         .help("Enable trace level logs"))
     .arg(Arg::new("cli_version")
         .short('v')
@@ -92,64 +115,68 @@ fn add_plugin_cli_subcommand() -> Command {
     .subcommand(Command::new("list")
         .about("List the installed plugins")
         .arg_required_else_help(true)
-    .subcommand(Command::new("installed")
-        .about("List installed plugins"))
-    .subcommand(Command::new("known")
-        .about("List known plugins")
-        .arg(Arg::new("show_all_versions")
-            .short('a')
-            .long("show-all-versions")
-            .help("Display all versions of the known plugins")
-            .action(clap::ArgAction::SetFalse)
-        )
-        
-        ))
-
+        .subcommand(Command::new("installed")
+            .about("List installed plugins"))
+        .subcommand(Command::new("known")
+            .about("List known plugins")
+            .arg(Arg::new("show_all_versions")
+                .short('a')
+                .long("show-all-versions")
+                .help("Display all versions of the known plugins")
+                .action(clap::ArgAction::SetTrue)
+            )
+            ))
     .subcommand(Command::new("env")
         .about("Print out the Pact plugin environment config"))
     .subcommand(Command::new("install")
-        .about("Install a plugin")
-    .arg(Arg::new("source_type")
-        .short('t')
-        .long("source-type")
-        .num_args(1)
-        .value_name("SOURCE_TYPE")
-        .help("The type of source to fetch the plugin files from. Will default to Github releases.")
-        .value_parser(clap::builder::PossibleValuesParser::new(&["github"])))
-    .arg(Arg::new("yes")
-        .short('y')
-        .long("yes")
-        .help("Automatically answer Yes for all prompts"))
-    .arg(Arg::new("skip_if_installed")
-        .long("skip-if-installed")
-        .short('s')
-        .help("Skip installing the plugin if the same version is already installed"))
-    .arg(Arg::new("source")
-        .help("Where to fetch the plugin files from. This should be a URL or the name of a known plugin.")
-        .value_name("SOURCE")
-        .required(true))
-    .arg(Arg::new("version")
-        .long("version")
-        .short('v')
-        .num_args(1)
-        .help("The version to install. This is only used for known plugins.")
-        .value_name("VERSION")))
-        
+        .about("Install a plugin \n\nA plugin can be either installed from a URL, or for a known plugin, by name (and optionally version)")
+        .arg_required_else_help(true)
+        .arg(Arg::new("source_type")
+            .short('t')
+            .long("source-type")
+            .num_args(1)
+            .value_name("SOURCE_TYPE")
+            .help("The type of source to fetch the plugin files from. Will default to Github releases.")
+            .value_parser(clap::builder::PossibleValuesParser::new(&["github"])))
+        .arg(Arg::new("yes")
+            .short('y')
+            .long("yes")
+            .action(clap::ArgAction::SetTrue)
+            .help("Automatically answer Yes for all prompts"))
+        .arg(Arg::new("skip_if_installed")
+            .long("skip-if-installed")
+            .action(clap::ArgAction::SetTrue)
+            .short('s')
+            .help("Skip installing the plugin if the same version is already installed"))
+        .arg(Arg::new("source")
+            .help("Where to fetch the plugin files from. This should be a URL or the name of a known plugin.")
+            .value_name("SOURCE")
+            .required(true))
+        .arg(Arg::new("version")
+            .long("version")
+            .short('v')
+            .num_args(1)
+            .help("The version to install. This is only used for known plugins.")
+            .value_name("VERSION")))  
     .subcommand(Command::new("remove")
         .about("Remove a plugin")
         .arg(Arg::new("yes")
             .short('y')
             .long("yes")
+            .action(clap::ArgAction::SetTrue)
             .help("Automatically answer Yes for all prompts"))
         .arg(Arg::new("name")
+            .value_name("NAME")
             .required(true)
             .help("Plugin name"))
         .arg(Arg::new("version")
-            .help("Plugin version. Not required if there is only one plugin version.")
-            .value_name("VERSION"))
-    
+            .value_name("VERSION")
+            // .value_parser(clap::builder::NonEmptyStringValueParser::new())
+            .help("Plugin version. Not required if there is only one plugin version."))
+
     )
     .subcommand(Command::new("enable")
+    .arg_required_else_help(true)
         .about("Enable a plugin version")
         .arg(Arg::new("name")
         .required(true)
@@ -159,6 +186,7 @@ fn add_plugin_cli_subcommand() -> Command {
         .value_name("VERSION"))
     )
     .subcommand(Command::new("disable")
+    .arg_required_else_help(true)
         .about("Disable a plugin version")
         .arg(Arg::new("name")
         .required(true)
@@ -168,86 +196,87 @@ fn add_plugin_cli_subcommand() -> Command {
         .value_name("VERSION"))
     )
     .subcommand(Command::new("repository")
+        .arg_required_else_help(true)
         .about("Sub-commands for dealing with a plugin repository")
         .subcommand(Command::new("validate")
         .about("Check the consistency of the repository index file")
         .arg(Arg::new("filename")
+        .value_name("FILENAME")
+        .required(true)
             .help("Filename to validate")))
     .subcommand(Command::new("new")
         .about("Create a new blank repository index file")
         .arg(Arg::new("filename")
-            .long("filename")
-            .help("Filename to validate"))
+        .value_name("FILENAME")
+            .help("Filename to use for the new file. By default will use repository.index"))
         .arg(Arg::new("overwrite")
+            .short('o')
             .long("overwrite")
             .num_args(0)
             .help(" Overwrite any existing file?"))
         )
-
-   
-            .subcommand(Command::new("add-plugin-version")
+        .subcommand(Command::new("add-plugin-version")
             .about("Add a plugin version to the index file (will update existing entry)")
-            // .arg(Arg::new("type")
-            //     .required(true)
-            //     .help("Type of the plugin source")
-            //     .value_parser(clap::builder::PossibleValuesParser::new(&["git-hub", "file"]))
-            //     .value_name("TYPE"))
-            .subcommand(Command::new("git-hub")
-            .about("Add an entry for a GitHub Release to the repository file")
-
-            .arg(Arg::new("REPOSITORY_FILE")
-                .required(true)
-                .help("Repository index file to update"))
-            .arg(Arg::new("URL")
-            .required(true)
-                .help("Base URL for GitHub APIs, will default to https://api.github.com/repos/")))
-            
-            .subcommand(Command::new("file")
+            .arg_required_else_help(true)
+            .subcommand_required(true)
+        .subcommand(Command::new("file")
             .about("Add an entry for a local plugin manifest file to the repository file")
-            .arg(Arg::new("REPOSITORY_FILE")
+            .arg(Arg::new("repository_file")
+            .value_name("REPOSITORY_FILE")
                 .required(true)
                 .help("Repository index file to update"))
-            .arg(Arg::new("URL")
+            .arg(Arg::new("name")
+            .value_name("FILE")
+            .required(true)
+                .help("Path to the local plugin manifest file")))
+        .subcommand(Command::new("git-hub")
+            .about("Add an entry for a GitHub Release to the repository file")
+            .arg(Arg::new("repository_file")
+            .value_name("REPOSITORY_FILE")
+                .required(true)
+                .help("Repository index file to update"))
+            .arg(Arg::new("url")
+            .value_name("URL")
             .required(true)
                 .help("Base URL for GitHub APIs, will default to https://api.github.com/repos/")))
-            
-            )
-                
-            
-    
-    
+        )
         .subcommand(Command::new("add-all-plugin-versions")
         .about("Add all versions of a plugin to the index file (will update existing entries)")
-        .arg(Arg::new("REPOSITORY_FILE")
+        .arg(Arg::new("repository_file")
+            .value_name("REPOSITORY_FILE")
             .required(true)
             .help("Repository index file to update"))
-        .arg(Arg::new("OWNER")
+        .arg(Arg::new("owner")
+            .value_name("OWNER")
             .required(true)
             .help("Repository owner to load versions from"))
-        .arg(Arg::new("REPOSITORY")
+        .arg(Arg::new("repository")
+            .value_name("REPOSITORY")
             .required(true)
             .help("Repository to load versions from"))
         .arg(Arg::new("base_url")
+            .value_name("BASE_URL")
             .help("Base URL for GitHub APIs, will default to https://api.github.com/repos/")))
     .subcommand(Command::new("yank-version")
         .about("Remove a plugin version from the index file"))
     .subcommand(Command::new("list")
         .about("List all plugins found in the index file")
-        .arg(Arg::new("FILENAME")
+        .arg(Arg::new("filename")
+        .value_name("FILENAME")
             .required(true)
             .help("Filename to list entries from")))
     .subcommand(Command::new("list-versions")
         .about("List all plugin versions found in the index file")
-        .arg(Arg::new("FILENAME")
+        .arg(Arg::new("filename")
+        .value_name("FILENAME")
             .required(true)
             .help("Filename to list versions from"))
-        .arg(Arg::new("NAME")
+            .arg(Arg::new("name")
+            .value_name("NAME")
             .required(true)
             .help("Plugin entry to list versions for"))   ) 
-        
 
     )
-
 }
 
 // determine if worth pulling out arguments
@@ -261,6 +290,108 @@ fn add_plugin_cli_subcommand() -> Command {
 //   4 Arg::new("environment")
 //   3 Arg::new("provider")
 //   3 Arg::new("display-name")
+
+fn add_examples_subcommand() -> Command {
+    Command::new("examples")
+        .about("download example projects")
+        .arg(
+            Arg::new("type")
+                .short('t')
+                .long("type")
+                .num_args(1)
+                .value_parser(clap::builder::PossibleValuesParser::new(&[
+                    "bdct",
+                    "cdct",
+                    "workshops",
+                ]))
+                .required(true)
+                .help("Specify the project type (bdct, cdct, workshops)"),
+        )
+        .arg(
+            Arg::new("project")
+                .short('p')
+                .long("project")
+                .num_args(1)
+                .help("Specify the project to download"),
+        )
+        .arg(
+            Arg::new("all")
+                .short('a')
+                .long("all")
+                .help("Download all projects")
+                .action(clap::ArgAction::SetTrue),
+        )
+}
+
+fn add_project_subcommand() -> Command {
+    Command::new("project")
+        .about("Pact project actions for setting up and managing pact projects")
+        .subcommand(
+            Command::new("install").about("install pact").arg(
+                Arg::new("language")
+                    .short('l')
+                    .long("language")
+                    .num_args(1)
+                    .value_parser(clap::builder::PossibleValuesParser::new(&[
+                        "js", "golang", "ruby", "python", "java", ".net", "rust", "php",
+                    ]))
+                    .required(true)
+                    .help("Specify the language to install pact for"),
+            ),
+        )
+        .subcommand(
+            Command::new("new").about("create new pact project").arg(
+                Arg::new("language")
+                    .short('l')
+                    .long("language")
+                    .num_args(1)
+                    .value_parser(clap::builder::PossibleValuesParser::new(&[
+                        "js", "golang", "ruby", "python", "java", ".net", "rust", "php",
+                    ]))
+                    .required(true)
+                    .help("Specify the language for the new pact project"),
+            ),
+        )
+        .subcommand(
+            Command::new("link").about("link pact project").arg(
+                Arg::new("language")
+                    .short('l')
+                    .long("language")
+                    .num_args(1)
+                    .value_parser(clap::builder::PossibleValuesParser::new(&[
+                        "js", "golang", "ruby", "python", "java", ".net", "rust", "php",
+                    ]))
+                    .required(true)
+                    .help("Specify the language of the pact project to link"),
+            ),
+        )
+        .subcommand(
+            Command::new("issue").about("create pact issue").arg(
+                Arg::new("language")
+                    .short('l')
+                    .long("language")
+                    .num_args(1)
+                    .value_parser(clap::builder::PossibleValuesParser::new(&[
+                        "js", "golang", "ruby", "python", "java", ".net", "rust", "php",
+                    ]))
+                    .required(true)
+                    .help("Specify the language for creating the pact issue"),
+            ),
+        )
+        .subcommand(
+            Command::new("docs").about("open pact documentation").arg(
+                Arg::new("language")
+                    .short('l')
+                    .long("language")
+                    .num_args(1)
+                    .value_parser(clap::builder::PossibleValuesParser::new(&[
+                        "js", "golang", "ruby", "python", "java", ".net", "rust", "php",
+                    ]))
+                    .required(true)
+                    .help("Specify the language for opening the pact documentation"),
+            ),
+        )
+}
 
 fn add_broker_auth_arguments() -> Vec<Arg> {
     vec![
@@ -295,25 +426,26 @@ fn add_broker_auth_arguments() -> Vec<Arg> {
             .env("PACT_BROKER_TOKEN"),
     ]
 }
-fn add_output_arguments() -> Vec<Arg> {
-    vec![
-        Arg::new("output")
+fn add_output_arguments(
+    value_parser_args: Vec<&'static str>,
+    default_value: &'static str,
+) -> Vec<Arg> {
+    vec![Arg::new("output")
         .short('o')
         .long("output")
         .value_name("OUTPUT")
-        .value_parser(clap::builder::PossibleValuesParser::new(&["json", "text"]))
-        .default_value("text")
-        .help("json or text")
-    ]
+        .value_parser(clap::builder::PossibleValuesParser::new(&value_parser_args))
+        .default_value(default_value) // Fix: Remove the borrow operator
+        .value_name("OUTPUT")
+        .help(format!("Value must be one of {:?}", value_parser_args))]
 }
+
 fn add_verbose_arguments() -> Vec<Arg> {
-    vec![
-        Arg::new("verbose")
+    vec![Arg::new("verbose")
         .short('v')
         .long("verbose")
         .num_args(0)
-        .help("Verbose output.")
-    ]
+        .help("Verbose output.")]
 }
 
 fn add_publish_pacts_subcommand() -> Command {
@@ -357,7 +489,7 @@ fn add_publish_pacts_subcommand() -> Command {
         .long("merge")
         .num_args(0)
         .help("If a pact already exists for this consumer version and provider, merge the contents. Useful when running Pact tests concurrently on different build nodes."))
-        .args(add_output_arguments())
+        .args(add_output_arguments(["json", "text"].to_vec(),"text"))
 .args(add_verbose_arguments())
 }
 
@@ -366,8 +498,7 @@ fn add_list_latest_pact_versions_subcommand() -> Command {
         .about("List the latest pact for each integration")
         .args(add_broker_auth_arguments())
         .args(add_verbose_arguments())
-
-        .args(add_output_arguments())
+        .args(add_output_arguments(["json", "table"].to_vec(), "table"))
 }
 fn add_create_environment_subcommand() -> Command {
     Command::new("create-environment")
@@ -383,6 +514,7 @@ fn add_create_environment_subcommand() -> Command {
         .help("The display name of the environment"))
     .arg(Arg::new("production")
         .long("production")
+        .action(clap::ArgAction::SetTrue)
         .help("Whether or not this environment is a production environment. This is currently informational only."))
     .arg(Arg::new("contact-name")
         .long("contact-name")
@@ -392,11 +524,10 @@ fn add_create_environment_subcommand() -> Command {
         .long("contact-email-address")
         .value_name("CONTACT_EMAIL_ADDRESS")
         .help("The email address of the team/person responsible for this environment"))
-        .args(add_output_arguments())
+        .args(add_output_arguments(["json", "text", "id"].to_vec(), "text"))
 
 .args(add_broker_auth_arguments())
 .args(add_verbose_arguments())
-
 }
 fn add_update_environment_subcommand() -> Command {
     Command::new("update-environment")
@@ -416,6 +547,7 @@ fn add_update_environment_subcommand() -> Command {
         .help("The display name of the environment"))
     .arg(Arg::new("production")
         .long("production")
+        .action(clap::ArgAction::SetTrue)
         .help("Whether or not this environment is a production environment. This is currently informational only."))
     .arg(Arg::new("contact-name")
         .long("contact-name")
@@ -425,22 +557,8 @@ fn add_update_environment_subcommand() -> Command {
         .long("contact-email-address")
         .value_name("CONTACT_EMAIL_ADDRESS")
         .help("The email address of the team/person responsible for this environment"))
-        .args(add_output_arguments())
+        .args(add_output_arguments(["json", "text", "id"].to_vec(), "text"))
 .args(add_broker_auth_arguments())
-.args(add_verbose_arguments())
-}
-fn add_delete_environment_subcommand() -> Command {
-    Command::new("delete-environment")
-        .about("Delete an environment")
-        .arg(
-            Arg::new("uuid")
-                .long("uuid")
-                .value_name("UUID")
-                .required(true)
-                .help("The UUID of the environment to delete"),
-        )
-        .args(add_output_arguments())
-        .args(add_broker_auth_arguments())
 .args(add_verbose_arguments())
 }
 fn add_describe_environment_subcommand() -> Command {
@@ -453,16 +571,34 @@ fn add_describe_environment_subcommand() -> Command {
                 .required(true)
                 .help("The UUID of the environment to describe"),
         )
-        .args(add_output_arguments())
+        .args(add_output_arguments(["json", "text"].to_vec(), "text"))
         .args(add_broker_auth_arguments())
-.args(add_verbose_arguments())
+        .args(add_verbose_arguments())
 }
+fn add_delete_environment_subcommand() -> Command {
+    Command::new("delete-environment")
+        .about("Delete an environment")
+        .arg(
+            Arg::new("uuid")
+                .long("uuid")
+                .value_name("UUID")
+                .required(true)
+                .help("The UUID of the environment to delete"),
+        )
+        // .args(add_output_arguments(["json", "text"].to_vec(), "text"))
+        .args(add_broker_auth_arguments())
+        .args(add_verbose_arguments())
+}
+
 fn add_list_environments_subcommand() -> Command {
     Command::new("list-environments")
         .about("List environments")
-        .args(add_output_arguments())
+        .args(add_output_arguments(
+            ["json", "text", "pretty"].to_vec(),
+            "text",
+        ))
         .args(add_broker_auth_arguments())
-.args(add_verbose_arguments())
+        .args(add_verbose_arguments())
 }
 fn add_record_deployment_subcommand() -> Command {
     Command::new("record-deployment")
@@ -471,23 +607,32 @@ fn add_record_deployment_subcommand() -> Command {
         .short('a')
         .long("pacticipant")
         .value_name("PACTICIPANT")
+        .value_parser(clap::builder::NonEmptyStringValueParser::new())
         .required(true)
         .help("The name of the pacticipant that was deployed"))
     .arg(Arg::new("version")
         .short('e')
         .long("version")
         .value_name("VERSION")
+        .value_parser(clap::builder::NonEmptyStringValueParser::new())
         .required(true)
         .help("The pacticipant version number that was deployed"))
     .arg(Arg::new("environment")
         .long("environment")
         .value_name("ENVIRONMENT")
+        .value_parser(clap::builder::NonEmptyStringValueParser::new())
         .required(true)
         .help("The name of the environment that the pacticipant version was deployed to"))
     .arg(Arg::new("application-instance")
         .long("application-instance")
         .value_name("APPLICATION_INSTANCE")
+        .alias("target")
+        .value_parser(clap::builder::NonEmptyStringValueParser::new())
         .help("Optional. The application instance to which the deployment has occurred - a logical identifer required to differentiate deployments when there are multiple instances of the same application in an environment. This field was called 'target' in a beta release"))
+    .args(add_output_arguments(
+        ["json", "text", "pretty"].to_vec(),
+        "text",
+    ))
 
 .args(add_broker_auth_arguments())
 .args(add_verbose_arguments())
@@ -495,29 +640,35 @@ fn add_record_deployment_subcommand() -> Command {
 fn add_record_undeployment_subcommand() -> Command {
     Command::new("record-undeployment")
     .about("Record undeployment of a pacticipant version from an environment")
+    .long_about("Record undeployment of a pacticipant version from an environment.\n\nNote that use of this command is only required if you are permanently removing an application instance from an environment. It is not required if you are deploying over a previous version, as record-deployment will automatically mark the previously deployed version as undeployed for you. See https://docs.pact.io/go/record-undeployment for more information.")
     .arg(Arg::new("pacticipant")
         .short('a')
         .long("pacticipant")
         .value_name("PACTICIPANT")
+        .value_parser(clap::builder::NonEmptyStringValueParser::new())
         .required(true)
         .help("The name of the pacticipant that was undeployed"))
     .arg(Arg::new("environment")
         .long("environment")
-        .value_name("ENVIRONMENT")
+       .value_name("ENVIRONMENT")
+        .value_parser(clap::builder::NonEmptyStringValueParser::new())
         .required(true)
         .help("The name of the environment that the pacticipant version was undeployed from"))
     .arg(Arg::new("application-instance")
         .long("application-instance")
+        .alias("target")
         .value_name("APPLICATION_INSTANCE")
+        .value_parser(clap::builder::NonEmptyStringValueParser::new())
         .help("Optional. The application instance from which the application is being undeployed - a logical identifer required to differentiate deployments when there are multiple instances of the same application in an environment. This field was called 'target' in a beta release"))
-    .arg(Arg::new("target")
-        .long("target")
-        .value_name("TARGET")
-        .help("Optional. The target that the application is being undeployed from - a logical identifer required to differentiate deployments when there are multiple instances of the same application in an environment"))
 
-.args(add_broker_auth_arguments())
-.args(add_verbose_arguments())
+    .args(add_broker_auth_arguments())
+    .args(add_verbose_arguments())
+    .args(add_output_arguments(
+        ["json", "text", "pretty"].to_vec(),
+        "text",
+    ))
 }
+
 fn add_record_release_subcommand() -> Command {
     Command::new("record-release")
         .about("Record release of a pacticipant version to an environment.")
@@ -544,9 +695,12 @@ fn add_record_release_subcommand() -> Command {
                 .required(true)
                 .help("The name of the environment that the pacticipant version was released to."),
         )
-        .args(add_output_arguments())
+        .args(add_output_arguments(
+            ["json", "text", "pretty"].to_vec(),
+            "text",
+        ))
         .args(add_broker_auth_arguments())
-.args(add_verbose_arguments())
+        .args(add_verbose_arguments())
 }
 fn add_record_support_ended_subcommand() -> Command {
     Command::new("record-support-ended")
@@ -574,13 +728,62 @@ fn add_record_support_ended_subcommand() -> Command {
                 .required(true)
                 .help("The name of the environment in which the support is ended."),
         )
-        .args(add_output_arguments())
+        .args(add_output_arguments(
+            ["json", "text", "pretty"].to_vec(),
+            "text",
+        ))
         .args(add_broker_auth_arguments())
-.args(add_verbose_arguments())
+        .args(add_verbose_arguments())
 }
 fn add_can_i_deploy_subcommand() -> Command {
     Command::new("can-i-deploy")
     .about("Check if a pacticipant can be deployed.")
+    .long_about(
+    r"
+    Check if a pacticipant can be deployed.
+
+    Description:
+    Returns exit code 0 or 1, indicating whether or not the specified application (pacticipant) has a successful verification result with
+    each of the application versions that are already deployed to a particular environment. Prints out the relevant pact/verification
+    details, indicating any missing or failed verification results.
+  
+    The can-i-deploy tool was originally written to support specifying versions and dependencies using tags. This usage has now been
+    superseded by first class support for environments, deployments and releases. For documentation on how to use can-i-deploy with tags,
+    please see https://docs.pact.io/pact_broker/client_cli/can_i_deploy_usage_with_tags/
+  
+    Before `can-i-deploy` can be used, the relevant environment resources must first be created in the Pact Broker using the
+    `create-environment` command. The 'test' and 'production' environments will have been seeded for you. You can check the existing
+    environments by running `pact-broker list-environments`. See https://docs.pact.io/pact_broker/client_cli/readme#environments for more
+    information.
+  
+    $ pact-broker create-environment --name 'uat' --display-name 'UAT' --no-production
+  
+    After an application is deployed or released, its deployment must be recorded using the `ecord-deployment` or `ecord-release`
+    commands. See https://docs.pact.io/pact_broker/recording_deployments_and_releases/ for more information.
+  
+    $ pact-broker record-deployment --pacticipant Foo --version 173153ae0 --environment uat
+  
+    Before an application is deployed or released to an environment, the can-i-deploy command must be run to check that the application
+    version is safe to deploy with the versions of each integrated application that are already in that environment.
+  
+    $ pact-broker can-i-deploy --pacticipant PACTICIPANT --version VERSION --to-environment ENVIRONMENT
+  
+    Example: can I deploy version 173153ae0 of application Foo to the test environment?
+  
+    $ pact-broker can-i-deploy --pacticipant Foo --version 173153ae0 --to-environment test
+  
+    Can-i-deploy can also be used to check if arbitrary versions have a successful verification. When asking 'Can I deploy this
+    application version with the latest version from the main branch of another application' it functions as a 'can I merge' check.
+  
+    $ pact-broker can-i-deploy --pacticipant Foo 173153ae0 \\ --pacticipant Bar --latest main
+  
+    ##### Polling
+  
+    If the verification process takes a long time and there are results missing when the can-i-deploy command runs in your CI/CD pipeline,
+    you can configure the command to poll and wait for the missing results to arrive. The arguments to specify are `--retry-while-unknown
+    TIMES` and `--retry-interval SECONDS`, set to appropriate values for your pipeline.
+    "
+    )
     .arg(Arg::new("pacticipant")
         .short('a')
         .long("pacticipant")
@@ -595,13 +798,15 @@ fn add_can_i_deploy_subcommand() -> Command {
         .help("The pacticipant version. Must be entered after the --pacticipant that it relates to."))
     .arg(Arg::new("ignore")
         .long("ignore")
-        .value_name("PACTICIPANT")
-        .num_args(0..=1)
+        .num_args(0)
+        .action(clap::ArgAction::SetTrue)
         .help("The pacticipant name to ignore. Use once for each pacticipant being ignored. A specific version can be ignored by also specifying a --version after the pacticipant name option. The environment variable PACT_BROKER_CAN_I_DEPLOY_IGNORE may also be used to specify a pacticipant name to ignore, with commas to separate multiple pacticipant names if necessary."))
     .arg(Arg::new("latest")
         .short('l')
         .long("latest")
-        .value_name("TAG")
+        .num_args(0)
+        .action(clap::ArgAction::SetTrue)
+        .value_name("LATEST")
         .help("Use the latest pacticipant version. Optionally specify a TAG to use the latest version with the specified tag."))
     .arg(Arg::new("branch")
         .long("branch")
@@ -609,16 +814,31 @@ fn add_can_i_deploy_subcommand() -> Command {
         .help("The branch of the version for which you want to check the verification results."))
     .arg(Arg::new("main-branch")
         .long("main-branch")
+        .num_args(0)
+        .action(clap::ArgAction::SetTrue)
+        .conflicts_with_all(&["no-main-branch", "skip-main-branch"])
         .help("Use the latest version of the configured main branch of the pacticipant as the version for which you want to check the verification results"))
+    .arg(Arg::new("no-main-branch")
+        .long("no-main-branch")
+        .num_args(0)
+        .action(clap::ArgAction::SetTrue)
+        .conflicts_with_all(&["main-branch", "skip-main-branch"])
+        .help("No main branch of the pacticipant as the version for which you want to check the verification results"))
+    .arg(Arg::new("skip-main-branch")
+        .long("skip-main-branch")
+        .num_args(0)
+        .action(clap::ArgAction::SetTrue)
+        .conflicts_with_all(&["main-branch", "no-main-branch"])
+        .help("Skip the configured main branch of the pacticipant as the version for which you want to check the verification results"))
     .arg(Arg::new("to-environment")
         .long("to-environment")
         .value_name("ENVIRONMENT")
         .help("The environment into which the pacticipant(s) are to be deployed"))
     .arg(Arg::new("to")
         .long("to")
-        .value_name("TAG")
+        .value_name("TO")
         .help("The tag that represents the branch or environment of the integrated applications for which you want to check the verification result status."))
-        .args(add_output_arguments())
+        .args(add_output_arguments(["json", "table"].to_vec(), "table"))
     .arg(Arg::new("retry-while-unknown")
         .long("retry-while-unknown")
         .value_name("TIMES")
@@ -629,6 +849,21 @@ fn add_can_i_deploy_subcommand() -> Command {
         .help("The time between retries in seconds. Use in conjuction with --retry-while-unknown"))
     .arg(Arg::new("dry-run")
         .long("dry-run")
+        .num_args(0)
+        .conflicts_with_all(&["skip-dry-run", "no-dry-run"])
+        .action(clap::ArgAction::SetTrue)
+        .help("When dry-run is enabled, always exit process with a success code. Can also be enabled by setting the environment variable PACT_BROKER_CAN_I_DEPLOY_DRY_RUN=true. This mode is useful when setting up your CI/CD pipeline for the first time, or in a 'break glass' situation where you need to knowingly deploy what Pact considers a breaking change. For the second scenario, it is recommended to use the environment variable and just set it for the build required to deploy that particular version, so you don't accidentally leave the dry run mode enabled."))
+    .arg(Arg::new("no-dry-run")
+        .long("no-dry-run")
+        .num_args(0)
+        .action(clap::ArgAction::SetTrue)
+        .conflicts_with_all(&["skip-dry-run", "dry-run"])
+        .help("When dry-run is enabled, always exit process with a success code. Can also be enabled by setting the environment variable PACT_BROKER_CAN_I_DEPLOY_DRY_RUN=true. This mode is useful when setting up your CI/CD pipeline for the first time, or in a 'break glass' situation where you need to knowingly deploy what Pact considers a breaking change. For the second scenario, it is recommended to use the environment variable and just set it for the build required to deploy that particular version, so you don't accidentally leave the dry run mode enabled."))
+    .arg(Arg::new("skip-dry-run")
+        .long("skip-dry-run")
+        .num_args(0)
+        .action(clap::ArgAction::SetTrue)
+        .conflicts_with_all(&["no-dry-run", "dry-run"])
         .help("When dry-run is enabled, always exit process with a success code. Can also be enabled by setting the environment variable PACT_BROKER_CAN_I_DEPLOY_DRY_RUN=true. This mode is useful when setting up your CI/CD pipeline for the first time, or in a 'break glass' situation where you need to knowingly deploy what Pact considers a breaking change. For the second scenario, it is recommended to use the environment variable and just set it for the build required to deploy that particular version, so you don't accidentally leave the dry run mode enabled."))
 
 .args(add_broker_auth_arguments())
@@ -650,7 +885,7 @@ fn add_can_i_merge_subcommand() -> Command {
         .long("version")
         .value_name("VERSION")
         .help("The pacticipant version. Must be entered after the --pacticipant that it relates to."))
-        .args(add_output_arguments())
+        .args(add_output_arguments(["json", "table"].to_vec(), "table"))
     .arg(Arg::new("retry-while-unknown")
         .long("retry-while-unknown")
         .value_name("TIMES")
@@ -696,8 +931,8 @@ fn add_create_or_update_pacticipant_subcommand() -> Command {
                 .value_name("REPOSITORY_URL")
                 .help("The repository URL of the pacticipant"),
         )
-        .args(add_output_arguments())
-.args(add_verbose_arguments())
+        .args(add_output_arguments(["json", "text"].to_vec(), "text"))
+        .args(add_verbose_arguments())
 }
 fn add_describe_pacticipant_subcommand() -> Command {
     Command::new("describe-pacticipant")
@@ -710,15 +945,15 @@ fn add_describe_pacticipant_subcommand() -> Command {
                 .required(true)
                 .help("Pacticipant name"),
         )
-        .args(add_output_arguments())
-.args(add_verbose_arguments())
+        .args(add_output_arguments(["json", "text"].to_vec(), "text"))
+        .args(add_verbose_arguments())
 }
 fn add_list_pacticipants_subcommand() -> Command {
     Command::new("list-pacticipants")
         .about("List pacticipants")
         .args(add_broker_auth_arguments())
-        .args(add_output_arguments())
-.args(add_verbose_arguments())
+        .args(add_output_arguments(["json", "text"].to_vec(), "text"))
+        .args(add_verbose_arguments())
 }
 fn add_create_webhook_subcommand() -> Command {
     Command::new("create-webhook")
@@ -884,7 +1119,7 @@ fn add_test_webhook_subcommand() -> Command {
                 .help("Specify the uuid for the webhook"),
         )
         .args(add_broker_auth_arguments())
-.args(add_verbose_arguments())
+        .args(add_verbose_arguments())
 }
 fn add_delete_branch_subcommand() -> Command {
     Command::new("delete-branch")
@@ -961,7 +1196,7 @@ fn add_describe_version_subcommand() -> Command {
         .long("latest")
         .value_name("TAG")
         .help("Describe the latest pacticipant version. Optionally specify a TAG to describe the latest version with the specified tag"))
-        .args(add_output_arguments())
+        .args(add_output_arguments(["json", "table", "id"].to_vec(), "table"))
 }
 fn add_create_or_update_version_subcommand() -> Command {
     Command::new("create-or-update-version")
@@ -996,7 +1231,7 @@ fn add_create_or_update_version_subcommand() -> Command {
                 .num_args(0..=1)
                 .help("Tag name for pacticipant version. Can be specified multiple times"),
         )
-        .args(add_output_arguments())
+        .args(add_output_arguments(["json", "text"].to_vec(), "text"))
 }
 fn add_generate_uuid_subcommand() -> Command {
     Command::new("generate-uuid")
@@ -1073,6 +1308,6 @@ fn add_publish_provider_contract_subcommand() -> Command {
         .long("build-url")
         .value_name("BUILD_URL")
         .help("The build URL that created the provider contract"))
-.args(add_output_arguments())
+        .args(add_output_arguments(["json", "text"].to_vec(), "text"))
 .args(add_verbose_arguments())
 }

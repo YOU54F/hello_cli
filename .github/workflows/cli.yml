@@ -3,7 +3,7 @@ name: Rust
 on:
   workflow_dispatch:
   push:
-    branches: [ "test" ]
+    branches: [ "test", "broker_test" ]
   pull_request:
     branches: [ "main" ]
 
@@ -13,19 +13,49 @@ env:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
 
+    strategy:
+      matrix:
+        # os: [ubuntu-latest, macos-12, macos-14, windows-latest]
+        os: [windows-latest]
+      fail-fast: false
+    defaults:
+      run:
+        shell: bash
     steps:
     - uses: actions/checkout@v3
-    - name: Build
+    - name: Download
+      if: matrix.os == 'ubuntu-latest'
       run: |
-        curl -LO https://github.com/YOU54F/hello_cli/releases/download/v0.0.0/pact_cli_x86_64-linux-musl
+        curl -LO https://github.com/YOU54F/hello_cli/releases/download/v0.0.1/pact_cli_x86_64-linux-musl
         chmod +x pact_cli_x86_64-linux-musl
         mv pact_cli_x86_64-linux-musl pact_cli
+    - name: Download
+      if: matrix.os == 'macos-12'
+      run: |
+        curl -LO https://github.com/YOU54F/hello_cli/releases/download/v0.0.1/pact_cli_x86_64-apple-darwin
+        chmod +x pact_cli_x86_64-apple-darwin
+        mv pact_cli_x86_64-apple-darwin pact_cli
+    - name: Download
+      if: matrix.os == 'macos-14'
+      run: |
+        curl -LO https://github.com/YOU54F/hello_cli/releases/download/v0.0.1/pact_cli_aarch64-apple-darwin
+        chmod +x pact_cli_aarch64-apple-darwin
+        mv pact_cli_aarch64-apple-darwin pact_cli
+    - name: Download
+      if: matrix.os == 'windows-latest'
+      run: |
+        curl -LO https://github.com/YOU54F/hello_cli/releases/download/v0.0.1/pact_cli_x86_64-windows-msvc.exe
+        chmod +x pact_cli_x86_64-windows-msvc.exe
+        mv pact_cli_x86_64-windows-msvc.exe pact_cli.exe
+    - name: Build
+      run: |
         ./pact_cli --help
         ./pact_cli pact-broker --help
         ./pact_cli pactflow --help
         ./pact_cli completions --help
+        ./pact_cli docker --help
         ./pact_cli plugin --help
         ./pact_cli plugin list --help
         ./pact_cli plugin list installed --help
@@ -36,12 +66,56 @@ jobs:
         ./pact_cli plugin enable --help
         ./pact_cli plugin disable --help
         ./pact_cli plugin repository --help
-        ./pact_cli plugin validate --help
-        ./pact_cli plugin new --help
-        ./pact_cli plugin add-plugin-version --help
-        ./pact_cli plugin add-plugin-version git-hub --help
-        ./pact_cli plugin add-plugin-version file --help
-        ./pact_cli plugin add-all-plugin-versions --help
-        ./pact_cli plugin yank-version --help
-        ./pact_cli plugin list --help
-        ./pact_cli plugin list-versions --help
+        ./pact_cli plugin repository validate --help
+        ./pact_cli plugin repository new --help
+        ./pact_cli plugin repository add-plugin-version --help
+        ./pact_cli plugin repository add-plugin-version git-hub --help
+        ./pact_cli plugin repository add-plugin-version file --help
+        ./pact_cli plugin repository add-all-plugin-versions --help
+        ./pact_cli plugin repository yank-version --help
+        ./pact_cli plugin repository list --help
+        ./pact_cli plugin repository list-versions --help
+        ./pact_cli stub --help
+        ./pact_cli verifier --help
+        ./pact_cli mock --help
+        ./pact_cli mock start --help
+        ./pact_cli mock list --help
+        ./pact_cli mock create --help
+        ./pact_cli mock verify --help
+        ./pact_cli mock shutdown --help
+        ./pact_cli mock shutdown-master --help
+        ./pact_cli standalone --help
+    - name: Run broker
+      if: matrix.os != 'windows-latest'
+      run: |
+        ./pact_cli standalone & echo $! > pact_cli.pid
+        export WAIT_FOR_VERSION=4df3f9262d84cab0039c07bf861045fbb3c20ab7
+        wget -qO- https://raw.githubusercontent.com/eficode/wait-for/$WAIT_FOR_VERSION/wait-for | sh -s -- http://0.0.0.0:9292/diagnostic/status/heartbeat -t 30 -- echo "Pact broker is up"
+        export PACT_BROKER_BASE_URL=http://0.0.0.0:9292
+        ./pact_cli pact-broker list-latest-pact-versions
+        ./pact_cli pact-broker create-environment --name name_foo1
+        ./pact_cli pact-broker create-environment --name name_foo2 --display-name display_name_foo
+        ./pact_cli pact-broker create-environment --name name_foo3 --display-name display_name_foo --contact-name contact_name_foo
+        ./pact_cli pact-broker create-environment --name name_foo4 --display-name display_name_foo --contact-name contact_name_foo --contact-email-address contact.email.address@foo.bar
+        export UUID=$(./pact_cli pact-broker create-environment --name name_foo5 --output=id)
+        ./pact_cli pact-broker describe-environment --uuid $UUID
+        ./pact_cli pact-broker update-environment --uuid $UUID --name name_foo6
+        ./pact_cli pact-broker update-environment --uuid $UUID --name name_foo7 --display-name display_name_foo6
+        ./pact_cli pact-broker update-environment --uuid $UUID --name name_foo8 --contact-name contact_name_foo8
+        ./pact_cli pact-broker update-environment --uuid $UUID --name name_foo9 --contact-name contact_name_foo9 --contact-email-address contact_name_foo7
+        ./pact_cli pact-broker list-environments
+        ./pact_cli pact-broker delete-environment --uuid $UUID
+        ./pact_cli pact-broker list-environments
+        kill $(cat pact_cli.pid)
+    # - name: Run broker
+    #   if: matrix.os == 'windows-latest'
+    #   run: |
+    #     curl -LO https://github.com/YOU54F/pact-ruby-standalone/releases/download/v3.0.0/pact-broker-app.exe.gz
+    #     gunzip pact-broker-app.exe.gz
+    #     ls -l ./*
+    #     echo "RACK_ENV=production" >> $GITHUB_ENV
+    # - name: Run broker
+    #   if: matrix.os == 'windows-latest'
+    #   shell: cmd
+    #   run: |
+    #     pact-broker-app.exe
