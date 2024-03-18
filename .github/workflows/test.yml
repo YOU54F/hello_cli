@@ -248,10 +248,10 @@ jobs:
       - name: Publish archives and packages
         uses: softprops/action-gh-release@master
         with:
-          tag_name: 'v0.0.1'
-          name: 'Release v0.0.1'
+          tag_name: 'v0.0.2'
+          name: 'Release v0.0.2'
           generate_release_notes: false
-          body: 'Release v0.0.1'
+          body: 'Release v0.0.2'
           files: |
             */${{ env.BINARY_APP_NAME }}*
         env:
