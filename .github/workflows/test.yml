@@ -240,18 +240,23 @@ jobs:
       - name: Create dist
         id: dist
         shell: bash
-        run: |
-          EXECUTABLE="target/${{ matrix.job.target }}/release/${{ env.BINARY_APP_NAME }}"
-          BINARY_NAME="${{ env.BINARY_APP_NAME }}_${{ matrix.job.target }}"
-          BINARY_NAME=${BINARY_NAME//-unknown-/-}
-          BINARY_NAME=${BINARY_NAME//-pc-/-}
-          BINARY_NAME=${BINARY_NAME//-apple-darwin/-macos}
-          BINARY_PATH="dist/${BINARY_NAME}"
-          mkdir -p "dist/"
-          # Binary
-          cp "${EXECUTABLE}" "${BINARY_PATH}"
-          echo "BINARY_NAME=${BINARY_NAME}" >> $GITHUB_OUTPUT
-          echo "BINARY_PATH=${BINARY_PATH}" >> $GITHUB_OUTPUT
+        run: ./prep_dist.sh
+      # - name: Create dist
+      #   id: dist
+      #   shell: bash
+      #   run: |
+      #     EXECUTABLE="target/${{ matrix.job.target }}/release/${{ env.BINARY_APP_NAME }}"
+      #     BINARY_NAME="${{ env.BINARY_APP_NAME }}_${{ matrix.job.target }}"
+      #     BINARY_NAME=${BINARY_NAME//-unknown-/-}
+      #     BINARY_NAME=${BINARY_NAME//-pc-/-}
+      #     BINARY_NAME=${BINARY_NAME//-apple-darwin/-macos}
+      #     BINARY_PATH="dist/${BINARY_NAME}"
+      #     mkdir -p "dist/"
+      #     # Binary
+      #     cp "${EXECUTABLE}" "${BINARY_PATH}"
+      #     echo "BINARY_NAME=${BINARY_NAME}" >> $GITHUB_OUTPUT
+      #     echo "BINARY_PATH=${BINARY_PATH}" >> $GITHUB_OUTPUT
+
       - uses: actions/upload-artifact@master
         with:
           name: ${{ steps.dist.outputs.BINARY_NAME }}
@@ -263,8 +268,7 @@ jobs:
           name: 'Release v0.0.4'
           generate_release_notes: false
           body: 'Release v0.0.4'
-          files: |
-            */${{ env.BINARY_APP_NAME }}*
+          files: dist/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
