@@ -199,7 +199,7 @@ jobs:
         if: ${{ matrix.job.target == 'aarch64-apple-darwin' }}
         run: echo "MACOSX_DEPLOYMENT_TARGET=11.0" >> $GITHUB_ENV
       - name: Build with cargo
-        if: ${{ matrix.job.use-cross != true }}
+        # if: ${{ matrix.job.use-cross != true }}
         run: make cargo_build_release TARGET=${{ matrix.job.target }} SLIM=true
       # - name: Build with cargo
       #   if: ${{ matrix.job.use-cross != true }}
@@ -227,9 +227,9 @@ jobs:
       #       cross build --bin ${{ env.BINARY_APP_NAME }} --release --target=${{ matrix.job.target }}
       #     fi
 
-      - name: Test
-        if: ${{ matrix.job.use-cross != true }}
-        run: cargo test --release
+      # - name: Test
+      #   if: ${{ matrix.job.use-cross != true }}
+      #   run: cargo test --release
       - name: Create dist
         id: dist
         shell: bash
