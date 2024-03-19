@@ -43,6 +43,13 @@ echo "Processing executables"
 echo "Processing shared libraries"
 for file in target/${TARGET}/release/*.{a,so,dll,dll.lib,dylib}; do
     echo "Processing $file for $DIST_TARGET_NAME"
+    # Check if the file exists
+    if [ ! -f "$file" ]; then
+        echo "File $file does not exist. Skipping..."
+        continue
+    fi
+    
+    
     # get file extension
     extension="${file##*.}"
     # get filename without extension
@@ -58,4 +65,32 @@ for file in target/${TARGET}/release/*.{a,so,dll,dll.lib,dylib}; do
     # get full filename without base path
     new_file_name="${DIST_TARGET_FILE##*/}"
     mv "${DIST_TARGET_FILE}" "${OUTPUT_DIR}/${new_file_name}"
+done
+
+# Check if files exist in dist folder
+echo "Checking dist folder for files"
+if [ ! -f "${OUTPUT_DIR}/${BINARY_NAME}-${DIST_TARGET_NAME}" ]; then
+    echo "Error: ${BINARY_NAME}-${DIST_TARGET_NAME} does not exist in ${OUTPUT_DIR}"
+    exit 1
+fi
+
+for file in ${OUTPUT_DIR}/*; do
+    if [ ! -f "$file" ]; then
+        echo "Error: $file does not exist in ${OUTPUT_DIR}"
+        exit 1
+    fi
+
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        if [[ "$file" == *"${DIST_TARGET_NAME}.dylib" ]] || [[ "$file" == *"${DIST_TARGET_NAME}.a" ]]; then
+            echo "Found dylib file: $file"
+        fi
+    elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
+        if [[ "$file" == *"${DIST_TARGET_NAME}.dll" || "$file" == *"${DIST_TARGET_NAME}.dll.lib" ]]; then
+            echo "Found DLL file: $file"
+        fi
+    elif [[ "$OSTYPE" == "linux"* ]]; then
+        if [[ "$file" == *"${DIST_TARGET_NAME}.so" ]] || [[ "$file" == *"${DIST_TARGET_NAME}.a" ]]; then
+            echo "Found shared library file: $file"
+        fi
+    fi
 done
