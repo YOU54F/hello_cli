@@ -240,7 +240,7 @@ jobs:
       - name: Create dist
         id: dist
         shell: bash
-        run: ./prep_dist.sh
+        run: ./prep_dist.sh ${{ matrix.job.target }}
       # - name: Create dist
       #   id: dist
       #   shell: bash
