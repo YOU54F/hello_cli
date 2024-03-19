@@ -207,7 +207,7 @@ jobs:
           rustup toolchain install nightly;
           rustup component add rust-src --toolchain nightly;
           cargo +nightly install cross --git https://github.com/cross-rs/cross;
-          RUSTFLAGS="-Zlocation-detail=none" cargo +nightly build -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort --target=${{ matrix.job.target }} --release
+          RUSTFLAGS="-Zlocation-detail=none" cargo +nightly build -Z build-std=std,panic_abort,core,alloc,proc_macro -Z build-std-features=panic_immediate_abort --target=${{ matrix.job.target }} --release
       # - name: Build with cargo
       #   if: ${{ matrix.job.use-cross != true }}
       #   run: cargo build --bin ${{ env.BINARY_APP_NAME }} --release --target=${{ matrix.job.target }}
@@ -245,7 +245,7 @@ jobs:
           BINARY_NAME="${{ env.BINARY_APP_NAME }}_${{ matrix.job.target }}"
           BINARY_NAME=${BINARY_NAME//-unknown-/-}
           BINARY_NAME=${BINARY_NAME//-pc-/-}
-          BINARY_NAME=${BINARY_NAME//-apple-darwin/macos}
+          BINARY_NAME=${BINARY_NAME//-apple-darwin/-macos}
           BINARY_PATH="dist/${BINARY_NAME}"
           mkdir -p "dist/"
           # Binary
@@ -259,10 +259,10 @@ jobs:
       - name: Publish archives and packages
         uses: softprops/action-gh-release@master
         with:
-          tag_name: 'v0.0.3'
-          name: 'Release v0.0.3'
+          tag_name: 'v0.0.4'
+          name: 'Release v0.0.4'
           generate_release_notes: false
-          body: 'Release v0.0.3'
+          body: 'Release v0.0.4'
           files: |
             */${{ env.BINARY_APP_NAME }}*
         env:
