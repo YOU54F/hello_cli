@@ -60,7 +60,11 @@ cargo_build_release:
 			RUSTFLAGS="-Zlocation-detail=none" cross +nightly build -Z build-std=std,panic_abort,core,alloc,proc_macro --profile release-aarch64-freebsd --target=$(TARGET); \
 			mv target/aarch64-unknown-freebsd/release-aarch64-freebsd target/aarch64-unknown-freebsd/release; \
 		else \
-			RUSTFLAGS="-Zlocation-detail=none" cross +nightly build -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort --target=$(TARGET) --release; \
+			if [[ $(TARGET) == "aarch64-unknown-linux-musl" ]] || [[ $(TARGET) == "armv5te-unknown-linux-musleabi" ]]; then \
+				RUSTFLAGS="-Zlocation-detail=none" cross +nightly build -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort --target=$(TARGET) --release -- -C link-arg=-lgcc; \
+			else \
+				RUSTFLAGS="-Zlocation-detail=none" cross +nightly build -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort --target=$(TARGET) --release; \
+			fi; \
 		fi \
 	elif [[ $(TARGET) == "aarch64-unknown-freebsd" ]]; then \
 		echo "building with cargo nightly, plus std and core for aarch64-unknown-freebsd"; \
