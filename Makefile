@@ -46,9 +46,13 @@ cargo_build_release:
 	elif [[ $(SLIM) == "true" ]]; then \
 		if [[ "$(shell uname -s)" == "Linux" ]]; then \
 			sudo apt install libstd-rust-dev; \
+			rustup toolchain install nightly; \
+			rustup component add rust-src --toolchain nightly; \
+		else \
+			rustup toolchain install nightly $(TARGET); \
+			rustup component add rust-src --toolchain nightly --target $(TARGET); \
 		fi; \
-		rustup toolchain install nightly; \
-		rustup component add rust-src --toolchain nightly; \
+
 		cargo +nightly install cross --git https://github.com/cross-rs/cross; \
 	else \
 		cargo install cross@0.2.5; \
