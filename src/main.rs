@@ -2,7 +2,9 @@
 mod cli;
 use clap::error::ErrorKind;
 use clap_complete::{generate_to, Shell};
-use pact_broker::{HALClient, Link, PactBrokerError};
+use pact_broker::list_latest_pact_versions::list_latest_pact_versions;
+use pact_broker::types::{BrokerDetails, OutputType};
+use pact_broker::{HALClient, PactBrokerError};
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::json;
@@ -21,15 +23,14 @@ use comfy_table::presets::UTF8_FULL;
 use comfy_table::Table;
 
 use ansi_term::Colour;
-use maplit::hashmap;
 use pact_models::http_utils::HttpAuth;
-use tabled::{builder::Builder, settings::Style};
 
 fn get_broker_url(args: &clap::ArgMatches) -> String {
     args.get_one::<String>("broker-base-url")
         .expect("url is required")
         .to_string()
 }
+
 // setup client with broker url and credentials
 fn get_auth(args: &clap::ArgMatches) -> HttpAuth {
     let token = args.try_get_one::<String>("broker-token");
@@ -83,67 +84,6 @@ fn handle_error(err: PactBrokerError) {
     std::process::exit(1);
 }
 
-async fn get_broker_relation(
-    hal_client: HALClient,
-    relation: String,
-    broker_url: String,
-) -> String {
-    let index_res: Result<Value, PactBrokerError> = hal_client.clone().fetch("/").await;
-    let index_res_clone = index_res.clone().unwrap();
-    index_res_clone
-        .get("_links")
-        .unwrap()
-        .get(relation)
-        .unwrap()
-        .get("href")
-        .unwrap()
-        .to_string()
-        .split(&broker_url)
-        .collect::<Vec<&str>>()[1]
-        .to_string()
-        .replace("\"", "")
-        .to_string()
-}
-
-async fn follow_broker_relation(
-    hal_client: HALClient,
-    relation: String,
-    relation_href: String,
-) -> Result<Value, PactBrokerError> {
-    let link = Link {
-        name: relation,
-        href: Some(relation_href),
-        templated: false,
-        title: None,
-    };
-    let template_values = hashmap! {};
-    hal_client.fetch_url(&link, &template_values).await
-}
-
-fn generate_table(res: &Value, columns: Vec<&str>, names: Vec<Vec<&str>>) {
-    let mut builder = Builder::default();
-    builder.push_record(columns);
-
-    if let Some(items) = res.get("pacts").unwrap().as_array() {
-        for item in items {
-            let mut values = vec![item; names.len()];
-
-            for (i, name) in names.iter().enumerate() {
-                for n in name.clone() {
-                    values[i] = values[i].get(n).unwrap();
-                }
-            }
-
-            let records: Vec<String> = values.iter().map(|v| v.to_string()).collect();
-            builder.push_record(records.as_slice());
-        }
-    }
-    let mut table = builder.build();
-    table.with(Style::rounded());
-
-    println!("{:#}", table);
-}
-
 pub fn main() {
     let app = cli::build_cli();
     let matches = app.clone().try_get_matches();
@@ -164,66 +104,82 @@ pub fn main() {
                             // setup client with broker url and credentials
                             let broker_url = get_broker_url(args);
                             let auth = get_auth(args);
-                            tokio::runtime::Runtime::new().unwrap().block_on(async {
-                                // query pact broker index and get hal relation link
-                                let hal_client: HALClient =
-                                    HALClient::with_url(&broker_url, Some(auth.clone()));
-                                let pb_latest_pact_versions_href_path = get_broker_relation(
-                                    hal_client.clone(),
-                                    "pb:latest-pact-versions".to_string(),
-                                    broker_url,
-                                )
-                                .await;
-                                // query the hal relation link to get the latest pact versions
-                                let res = follow_broker_relation(
-                                    hal_client.clone(),
-                                    "pb:latest-pact-versions".to_string(),
-                                    pb_latest_pact_versions_href_path,
-                                )
-                                .await;
+                            let broker_details = BrokerDetails {
+                                url: broker_url.clone(),
+                                auth: Some(auth),
+                            };
+                            let default_output: String = "text".to_string();
+                            let output_arg: &String =
+                                args.get_one::<String>("output").unwrap_or(&default_output);
+                            let output = match output_arg.as_str() {
+                                "json" => OutputType::Json,
+                                "table" => OutputType::Table,
+                                "pretty" => OutputType::Pretty,
+                                _ => OutputType::Text,
+                            };
 
-                                // handle user args for additional processing
-                                let output: Result<Option<&String>, clap::parser::MatchesError> =
-                                    args.try_get_one::<String>("output");
-                                // render result
-                                match output {
-                                    Ok(Some(output)) => {
-                                        if output == "json" {
-                                            let json: String =
-                                                serde_json::to_string(&res.unwrap()).unwrap();
-                                            println!("{}", json);
-                                        } else if output == "table" {
-                                            if let Ok(res) = res {
-                                                generate_table(
-                                                    &res,
-                                                    vec![
-                                                        "CONSUMER",
-                                                        "CONSUMER_VERSION",
-                                                        "PROVIDER",
-                                                        "CREATED_AT",
-                                                    ],
-                                                    vec![
-                                                        vec!["_embedded", "consumer", "name"],
-                                                        vec![
-                                                            "_embedded",
-                                                            "consumer",
-                                                            "_embedded",
-                                                            "version",
-                                                            "number",
-                                                        ],
-                                                        vec!["_embedded", "provider", "name"],
-                                                        vec!["createdAt"],
-                                                    ],
-                                                );
-                                            }
-                                        }
-                                    }
-                                    Ok(None) => {
-                                        println!("{:?}", res.clone());
-                                    }
-                                    Err(_) => todo!(),
-                                }
-                            });
+                            let verbose = args.get_flag("verbose");
+                            let _ = list_latest_pact_versions(&broker_details, output, verbose);
+                            // tokio::runtime::Runtime::new().unwrap().block_on(async {
+                            //     // query pact broker index and get hal relation link
+                            //     let hal_client: HALClient =
+                            //         HALClient::with_url(&broker_url, Some(auth.clone()));
+                            //     let pb_latest_pact_versions_href_path = get_broker_relation(
+                            //         hal_client.clone(),
+                            //         "pb:latest-pact-versions".to_string(),
+                            //         broker_url,
+                            //     )
+                            //     .await;
+                            //     // query the hal relation link to get the latest pact versions
+                            //     let res = follow_broker_relation(
+                            //         hal_client.clone(),
+                            //         "pb:latest-pact-versions".to_string(),
+                            //         pb_latest_pact_versions_href_path,
+                            //     )
+                            //     .await;
+
+                            //     // handle user args for additional processing
+                            //     let output: Result<Option<&String>, clap::parser::MatchesError> =
+                            //         args.try_get_one::<String>("output");
+                            //     // render result
+                            //     match output {
+                            //         Ok(Some(output)) => {
+                            //             if output == "json" {
+                            //                 let json: String =
+                            //                     serde_json::to_string(&res.unwrap()).unwrap();
+                            //                 println!("{}", json);
+                            //             } else if output == "table" {
+                            //                 if let Ok(res) = res {
+                            //                     pact_broker::utils::generate_table(
+                            //                         &res,
+                            //                         vec![
+                            //                             "CONSUMER",
+                            //                             "CONSUMER_VERSION",
+                            //                             "PROVIDER",
+                            //                             "CREATED_AT",
+                            //                         ],
+                            //                         vec![
+                            //                             vec!["_embedded", "consumer", "name"],
+                            //                             vec![
+                            //                                 "_embedded",
+                            //                                 "consumer",
+                            //                                 "_embedded",
+                            //                                 "version",
+                            //                                 "number",
+                            //                             ],
+                            //                             vec!["_embedded", "provider", "name"],
+                            //                             vec!["createdAt"],
+                            //                         ],
+                            //                     );
+                            //                 }
+                            //             }
+                            //         }
+                            //         Ok(None) => {
+                            //             println!("{:?}", res.clone());
+                            //         }
+                            //         Err(_) => todo!(),
+                            //     }
+                            // });
                         }
                         Some(("create-environment", args)) => {
                             let name = args.get_one::<String>("name");
@@ -272,7 +228,7 @@ pub fn main() {
                             }
                             let res = hal_client.post_json(&(broker_url + "/environments"), &payload.to_string()).await;
 
-                            let default_output = "text".to_string();
+                            let default_output: String = "text".to_string();
                             let output = args.get_one::<String>("output").unwrap_or(&default_output);
                             match res {
                                 Ok(res) => {
@@ -395,11 +351,12 @@ pub fn main() {
                                         } else if output == "id" {
                                             println!("{}", res["uuid"].to_string().trim_matches('"'));
                                         } else if output == "table" {
-                                            generate_table(
+                                            let table = pact_broker::utils::generate_table(
                                                 &res,
                                                 columns,
                                                 names,
                                             );
+                                            println!("{table}");
                                         }
                                         else {
                                             let uuid = res["uuid"].to_string();
@@ -2284,3 +2241,32 @@ pub fn main() {
         },
     }
 }
+
+// pub fn list_latest_pact_versions(broker_details: &BrokerDetails, output_type: OutputType, verbose: bool) {
+//     // setup client with broker url and credentials
+//     let broker_url = &broker_details.url;
+//     let auth = &broker_details.auth;
+//     tokio::runtime::Runtime::new().unwrap().block_on(async {
+//         // query pact broker index and get hal relation link
+//         let hal_client: HALClient = HALClient::with_url(broker_url, auth.clone());
+//         let pb_latest_pact_versions_href_path = get_broker_relation(
+//             hal_client.clone(),
+//             "pb:latest-pact-versions".to_string(),
+//             broker_url.to_string()
+//         )
+//         .await;
+//         // query the hal relation link to get the latest pact versions
+//         let res = follow_broker_relation(
+//             hal_client.clone(),
+//             "pb:latest-pact-versions".to_string(),
+//             pb_latest_pact_versions_href_path,
+//         )
+//         .await;
+
+//         // handle user args for additional processing
+
+//         if verbose {
+//             println!("Verbose mode is enabled");
+//         }
+//     });
+// }

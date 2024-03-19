@@ -200,29 +200,32 @@ jobs:
         run: echo "MACOSX_DEPLOYMENT_TARGET=11.0" >> $GITHUB_ENV
       - name: Build with cargo
         if: ${{ matrix.job.use-cross != true }}
-        run: cargo build --bin ${{ env.BINARY_APP_NAME }} --release --target=${{ matrix.job.target }}
+        run: make cargo_build_release TARGET=${{ matrix.job.target }} SLIM=true
+      # - name: Build with cargo
+      #   if: ${{ matrix.job.use-cross != true }}
+      #   run: cargo build --bin ${{ env.BINARY_APP_NAME }} --release --target=${{ matrix.job.target }}
 
-        # https://github.com/cross-rs/cross/issues/1345 x86_64-unknown-netbsd
-        # https://github.com/cross-rs/cross/issues/1453 x86_64-pc-windows-gnu
-        # https://github.com/cross-rs/cross/issues/1217 android
-      - name: Build with cross
-        if: ${{ matrix.job.use-cross == true }}
-        run: |
-          if [[ ${{ matrix.job.target }} == *"android"* ]] || [[ ${{ matrix.job.target }} == "x86_64-unknown-netbsd" ]] || [[ ${{ matrix.job.target }} == "x86_64-pc-windows-gnu" ]] || [[ ${{ matrix.job.target }} == "x86_64-unknown-freebsd" ]]; then
-            echo "installing latest cross"
-            cargo install cross --git https://github.com/cross-rs/cross
-          else
-            cargo install cross@0.2.5
-          fi
-          if [[ ${{ matrix.job.target }} == "aarch64-unknown-freebsd" ]]; then
-            echo "building with cargo nightly, plus std and core for aarch64-unknown-freebsd"
-            sudo apt install libstd-rust-dev
-            cargo +nightly install cross --git https://github.com/cross-rs/cross
-            cross +nightly build -Z build-std=std,core,alloc,proc_macro --bin ${{ env.BINARY_APP_NAME }} --profile release-aarch64-freebsd --target=${{ matrix.job.target }}
-            mv target/aarch64-unknown-freebsd/release-aarch64-freebsd target/aarch64-unknown-freebsd/release
-          else
-            cross build --bin ${{ env.BINARY_APP_NAME }} --release --target=${{ matrix.job.target }}
-          fi
+      #   # https://github.com/cross-rs/cross/issues/1345 x86_64-unknown-netbsd
+      #   # https://github.com/cross-rs/cross/issues/1453 x86_64-pc-windows-gnu
+      #   # https://github.com/cross-rs/cross/issues/1217 android
+      # - name: Build with cross
+      #   if: ${{ matrix.job.use-cross == true }}
+      #   run: |
+      #     if [[ ${{ matrix.job.target }} == *"android"* ]] || [[ ${{ matrix.job.target }} == "x86_64-unknown-netbsd" ]] || [[ ${{ matrix.job.target }} == "x86_64-pc-windows-gnu" ]] || [[ ${{ matrix.job.target }} == "x86_64-unknown-freebsd" ]]; then
+      #       echo "installing latest cross"
+      #       cargo install cross --git https://github.com/cross-rs/cross
+      #     else
+      #       cargo install cross@0.2.5
+      #     fi
+      #     if [[ ${{ matrix.job.target }} == "aarch64-unknown-freebsd" ]]; then
+      #       echo "building with cargo nightly, plus std and core for aarch64-unknown-freebsd"
+      #       sudo apt install libstd-rust-dev
+      #       cargo +nightly install cross --git https://github.com/cross-rs/cross
+      #       cross +nightly build -Z build-std=std,core,alloc,proc_macro --bin ${{ env.BINARY_APP_NAME }} --profile release-aarch64-freebsd --target=${{ matrix.job.target }}
+      #       mv target/aarch64-unknown-freebsd/release-aarch64-freebsd target/aarch64-unknown-freebsd/release
+      #     else
+      #       cross build --bin ${{ env.BINARY_APP_NAME }} --release --target=${{ matrix.job.target }}
+      #     fi
 
       - name: Test
         if: ${{ matrix.job.use-cross != true }}
@@ -235,6 +238,7 @@ jobs:
           BINARY_NAME="${{ env.BINARY_APP_NAME }}_${{ matrix.job.target }}"
           BINARY_NAME=${BINARY_NAME//-unknown-/-}
           BINARY_NAME=${BINARY_NAME//-pc-/-}
+          BINARY_NAME=${BINARY_NAME//-apple-darwin/macos}
           BINARY_PATH="dist/${BINARY_NAME}"
           mkdir -p "dist/"
           # Binary
@@ -248,10 +252,10 @@ jobs:
       - name: Publish archives and packages
         uses: softprops/action-gh-release@master
         with:
-          tag_name: 'v0.0.1'
-          name: 'Release v0.0.1'
+          tag_name: 'v0.0.3'
+          name: 'Release v0.0.3'
           generate_release_notes: false
-          body: 'Release v0.0.1'
+          body: 'Release v0.0.3'
           files: |
             */${{ env.BINARY_APP_NAME }}*
         env:

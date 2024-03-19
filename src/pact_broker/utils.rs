@@ -3,9 +3,11 @@
 use std::panic::RefUnwindSafe;
 use std::time::Duration;
 
+use comfy_table::{presets::UTF8_FULL, Table};
 use futures::StreamExt;
 use pact_models::interaction::Interaction;
 use reqwest::RequestBuilder;
+use serde_json::Value;
 use tokio::time::sleep;
 use tracing::{trace, warn};
 
@@ -103,4 +105,25 @@ pub(crate) fn as_safe_ref(
         let v4 = interaction.as_v4_http().unwrap();
         Box::new(v4)
     }
+}
+
+pub(crate) fn generate_table(res: &Value, columns: Vec<&str>, names: Vec<Vec<&str>>) -> Table {
+    let mut table = Table::new();
+    table.load_preset(UTF8_FULL).set_header(columns);
+    if let Some(items) = res.get("pacts").unwrap().as_array() {
+        for item in items {
+            let mut values = vec![item; names.len()];
+
+            for (i, name) in names.iter().enumerate() {
+                for n in name.clone() {
+                    values[i] = values[i].get(n).unwrap();
+                }
+            }
+
+            let records: Vec<String> = values.iter().map(|v| v.to_string()).collect();
+            table.add_row(records.as_slice());
+        }
+    };
+    // println!("{}", table.to_string());
+    table
 }
