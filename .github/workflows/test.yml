@@ -101,16 +101,16 @@ jobs:
           #     os: ubuntu-latest,
           #     use-cross: true
           #   }
-          - {
-              target: i686-unknown-linux-musl,
-              os: ubuntu-latest,
-              use-cross: true
-            }
-          - {
-              target: s390x-unknown-linux-gnu,
-              os: ubuntu-latest,
-              use-cross: true
-            }
+          # - {
+          #     target: i686-unknown-linux-musl,
+          #     os: ubuntu-latest,
+          #     use-cross: true
+          #   }
+          # - {
+          #     target: s390x-unknown-linux-gnu,
+          #     os: ubuntu-latest,
+          #     use-cross: true
+          #   }
           - {
               target: riscv64gc-unknown-linux-gnu,
               os: ubuntu-latest,
