@@ -94,3 +94,5 @@ for file in ${OUTPUT_DIR}/*; do
         fi
     fi
 done
+
+echo DIST_TARGET_NAME=${DIST_TARGET_NAME} >> $GITHUB_ENV
