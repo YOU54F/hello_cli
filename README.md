@@ -1103,7 +1103,7 @@ Commands:
   standalone   Install & Run the Pact Broker in $HOME/traveling-broker
   plugin       CLI utility for Pact plugins
   mock         Standalone Pact mock server
-  stub         Pact Stub Server 0.0.6
+  stub         Pact Stub Server 0.0.7
   verifier     
   help         Print this message or the help of the given subcommand(s)
 
@@ -1548,7 +1548,7 @@ Options:
 
 ```console
 $ pact_cli stub --help
-Pact Stub Server 0.0.6
+Pact Stub Server 0.0.7
 
 Usage: pact_cli stub [OPTIONS]
 
