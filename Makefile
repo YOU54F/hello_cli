@@ -65,11 +65,8 @@ cargo_build_release:
 			mv target/aarch64-unknown-freebsd/release-aarch64-freebsd target/aarch64-unknown-freebsd/release; \
 		else \
 			if [[ $(TARGET) == "aarch64-unknown-linux-musl" ]] || [[ $(TARGET) == "armv5te-unknown-linux-musleabi" ]]; then \
-				sudo apt install -y gcc-aarch64-linux-gnu; \
-				export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-gnu-gcc; \
-				export CC=aarch64-linux-gnu-gcc; \
-				RUSTFLAGS="-Zlocation-detail=none" cross +nightly build -Z build-std=std,panic_abort,core,alloc,proc_macro -Z build-std-features=panic_immediate_abort --target=$(TARGET) --bin $(BINARY_NAME) --release; \
-				RUSTFLAGS="-Ctarget-feature=-crt-static -Zlocation-detail=none" cross +nightly build -Z build-std=std,panic_abort,core,alloc,proc_macro -Z build-std-features=panic_immediate_abort --target=$(TARGET) --lib --release; \
+				RUSTFLAGS="-Zlocation-detail=none -C link-arg=-lgcc" cross +nightly build -Z build-std=std,panic_abort,core,alloc,proc_macro -Z build-std-features=panic_immediate_abort --target=$(TARGET) --bin $(BINARY_NAME) --release; \
+				RUSTFLAGS="-Ctarget-feature=-crt-static -Zlocation-detail=none -C link-arg=-lgcc" cross +nightly build -Z build-std=std,panic_abort,core,alloc,proc_macro -Z build-std-features=panic_immediate_abort --target=$(TARGET) --lib --release; \
 			elif [[ $(TARGET) == *"musl"* ]]; then \
 				RUSTFLAGS="-Zlocation-detail=none" cross +nightly build -Z build-std=std,panic_abort,core,alloc,proc_macro -Z build-std-features=panic_immediate_abort --target=$(TARGET) --bin $(BINARY_NAME) --release; \
 				RUSTFLAGS="-Ctarget-feature=-crt-static -Zlocation-detail=none" cross +nightly build -Z build-std=std,panic_abort,core,alloc,proc_macro -Z build-std-features=panic_immediate_abort --target=$(TARGET) --lib --release; \
@@ -82,8 +79,8 @@ cargo_build_release:
 		cross +nightly build -Z build-std=std,core,alloc,proc_macro --profile release-aarch64-freebsd --target=$(TARGET); \
 		mv target/aarch64-unknown-freebsd/release-aarch64-freebsd target/aarch64-unknown-freebsd/release; \
 	elif [[ $(TARGET) == *"musl"* ]]; then \
-		RUSTFLAGS="-Zlocation-detail=none" cross build --release --target=$(TARGET) --bin $(BINARY_NAME); \
-		RUSTFLAGS="-Ctarget-feature=-crt-static -Zlocation-detail=none" cross build --release --target=$(TARGET) --lib; \
+		cross build --release --target=$(TARGET) --bin $(BINARY_NAME); \
+		RUSTFLAGS="-Ctarget-feature=-crt-static" cross build --release --target=$(TARGET) --lib; \
 	else \
 		cross build --release --target=$(TARGET); \
 	fi
