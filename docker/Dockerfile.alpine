@@ -1,0 +1,22 @@
+ARG ARCH=
+FROM alpine:3.19 as builder
+ARG TARGETARCH
+ARG VERSION=0.0.8
+
+RUN if [ "$TARGETARCH" = "amd64" ]; then \
+        BIN_ARCH="x86_64"; \
+    elif [ "$TARGETARCH" = "arm64" ]; then \
+        BIN_ARCH="aarch64"; \
+    else \
+        echo "Invalid TARGET_ARCH"; \
+        exit 1; \
+    fi \
+    && wget -O pact_cli https://github.com/you54f/hello_cli/releases/download/v${VERSION}/pact_cli-${BIN_ARCH}-linux-musl && \
+    chmod +x pact_cli
+
+FROM --platform=linux/${TARGETARCH} alpine:3.19
+WORKDIR /app
+COPY --from=builder /pact_cli /app/
+EXPOSE 8080
+ENTRYPOINT ["./pact_cli"]
+CMD ["--help"]

@@ -1,0 +1,21 @@
+#!/bin/bash
+DOCKER_TAG=$(echo "$DOCKER_TAG" | sed 's/^refs\/tags\/v//')
+echo "Building version $DOCKER_TAG"
+docker buildx create --name multiarch --use
+
+PUSH_IMAGE=${PUSH_IMAGE:-false}
+if [ ${PUSH_IMAGE} = "true" ]; then
+  PUSH_CMD="--push "
+fi
+docker buildx build -t you54f/pact_cli:$DOCKER_TAG --build-arg VERSION=$DOCKER_TAG --platform linux/amd64,linux/arm64 ${PUSH_CMD}. -f Dockerfile.debian
+docker buildx build -t you54f/pact_cli:$DOCKER_TAG-debian --build-arg VERSION=$DOCKER_TAG --platform linux/amd64,linux/arm64 ${PUSH_CMD}. -f Dockerfile.debian
+docker buildx build -t you54f/pact_cli:$DOCKER_TAG-alpine --build-arg VERSION=$DOCKER_TAG --platform linux/amd64,linux/arm64 ${PUSH_CMD}. -f Dockerfile.alpine
+docker buildx build -t you54f/pact_cli:latest --build-arg VERSION=$DOCKER_TAG --platform linux/amd64,linux/arm64 ${PUSH_CMD}. -f Dockerfile.debian
+docker buildx build -t you54f/pact_cli:latest-debian --build-arg VERSION=$DOCKER_TAG --platform linux/amd64,linux/arm64 ${PUSH_CMD}. -f Dockerfile.debian
+docker buildx build -t you54f/pact_cli:latest-alpine --build-arg VERSION=$DOCKER_TAG --platform linux/amd64,linux/arm64 ${PUSH_CMD}. -f Dockerfile.alpine
+docker buildx build -t ghcr.io/you54f/pact_cli:$DOCKER_TAG --build-arg VERSION=$DOCKER_TAG --platform linux/amd64,linux/arm64 ${PUSH_CMD}. -f Dockerfile.debian
+docker buildx build -t ghcr.io/you54f/pact_cli:$DOCKER_TAG-debian --build-arg VERSION=$DOCKER_TAG --platform linux/amd64,linux/arm64 ${PUSH_CMD}. -f Dockerfile.debian
+docker buildx build -t ghcr.io/you54f/pact_cli:$DOCKER_TAG-alpine --build-arg VERSION=$DOCKER_TAG --platform linux/amd64,linux/arm64 ${PUSH_CMD}. -f Dockerfile.alpine
+docker buildx build -t ghcr.io/you54f/pact_cli:latest --build-arg VERSION=$DOCKER_TAG --platform linux/amd64,linux/arm64 ${PUSH_CMD}. -f Dockerfile.debian
+docker buildx build -t ghcr.io/you54f/pact_cli:latest-debian --build-arg VERSION=$DOCKER_TAG --platform linux/amd64,linux/arm64 ${PUSH_CMD}. -f Dockerfile.debian
+docker buildx build -t ghcr.io/you54f/pact_cli:latest-alpine --build-arg VERSION=$DOCKER_TAG --platform linux/amd64,linux/arm64 ${PUSH_CMD}. -f Dockerfile.alpine
