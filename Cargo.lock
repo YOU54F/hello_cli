@@ -1676,7 +1676,7 @@ dependencies = [
 
 [[package]]
 name = "pact_cli"
-version = "0.0.7"
+version = "0.0.8"
 dependencies = [
  "ansi_term",
  "anyhow",
