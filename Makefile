@@ -52,7 +52,7 @@ cargo_build_release:
 			rustup toolchain install nightly $(TARGET); \
 			rustup component add rust-src --toolchain nightly --target $(TARGET); \
 		fi; \
-		cargo +nightly install cross --git https://github.com/cross-rs/cross; \
+		cargo +nightly install cross@0.2.5; \
 	else \
 		cargo install cross@0.2.5; \
 	fi
