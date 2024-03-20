@@ -7,8 +7,8 @@ PUSH_IMAGE=${PUSH_IMAGE:-false}
 if [ ${PUSH_IMAGE} = "true" ]; then
   PUSH_CMD="--push "
 fi
-PLATFORMS_DEBIAN=${PLATFORMS_DEBIAN:-linux/amd64,linux/arm64,linux/arm,linux/arm/v8,linux/arm/v7,linux/arm/v6,linux/arm/v5,linux/i386}
-PLATFORMS_ALPINE=${PLATFORMS_ALPINE:-linux/amd64,linux/arm64,linux/arm,linux/arm/v8,linux/arm/v7,linux/arm/v6}
+PLATFORMS_DEBIAN=${PLATFORMS_DEBIAN:-linux/amd64,linux/arm64,linux/arm,linux/arm/v8,linux/arm/v7,linux/arm/v6,linux/arm/v5,linux/i386,linux/s390x}
+PLATFORMS_ALPINE=${PLATFORMS_ALPINE:-linux/amd64,linux/arm64,linux/arm,linux/arm/v8,linux/arm/v7,linux/arm/v6,linux/i386}
 docker buildx build -t you54f/pact_cli:$DOCKER_TAG --build-arg VERSION=$DOCKER_TAG --platform ${PLATFORMS_DEBIAN} ${PUSH_CMD}. -f Dockerfile.debian
 docker buildx build -t you54f/pact_cli:$DOCKER_TAG-debian --build-arg VERSION=$DOCKER_TAG --platform ${PLATFORMS_DEBIAN} ${PUSH_CMD}. -f Dockerfile.debian
 docker buildx build -t you54f/pact_cli:$DOCKER_TAG-alpine --build-arg VERSION=$DOCKER_TAG --platform ${PLATFORMS_ALPINE} ${PUSH_CMD}. -f Dockerfile.alpine

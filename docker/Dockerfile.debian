@@ -10,10 +10,13 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
         BIN_FILE=pact_cli-${BIN_ARCH}-linux-musl; \
     elif [ "$TARGETARCH" = "386" ] || [ "$TARGETARCH" = "586" ] || [ "$TARGETARCH" = "686" ]; then \
         BIN_ARCH="i686"; \
-        BIN_FILE=pact_cli-${BIN_ARCH}-linux-gnu; \
+        BIN_FILE=pact_cli-${BIN_ARCH}-linux-musl; \
     elif [ "$TARGETARCH" = "arm64" ]; then \
         BIN_ARCH="aarch64"; \
         BIN_FILE=pact_cli-${BIN_ARCH}-linux-musl; \
+    elif [ "$TARGETARCH" = "s390x" ]; then \
+        BIN_ARCH="s390x"; \
+        BIN_FILE=pact_cli-${BIN_ARCH}-linux-gnu; \
     elif [ "$TARGETARCH" = "arm" ]; then \
         echo ${TARGETVARIANT}; \
         if [ "$TARGETVARIANT" = "v8" ]; then \
@@ -27,7 +30,7 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
             BIN_FILE=pact_cli-${BIN_ARCH}-linux-musleabihf; \
         elif [ "$TARGETVARIANT" = "v5" ]; then \
             BIN_ARCH="armv5te"; \
-            BIN_FILE=pact_cli-${BIN_ARCH}-linux-musleabihf; \
+            BIN_FILE=pact_cli-${BIN_ARCH}-linux-musleabi; \
         else \
             echo "Invalid TARGETVARIANT: ${TARGETVARIANT}"; \
             exit 1; \
