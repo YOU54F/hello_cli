@@ -4,7 +4,7 @@ require 'fiddle/import'
 require 'json'
 module PactCliFiddle
   extend Fiddle::Importer
-  dlload File.expand_path('target/release/libpact_cli_ffi.dylib', Dir.pwd)
+  dlload File.expand_path('/libpact_cli_ffi-x86_64-linux-musl.so', Dir.pwd)
 
   extern 'const char *ffi_broker_list_latest_pact_versions(const char *args);'
   extern 'void ffi_free_string(char *ptr);'
