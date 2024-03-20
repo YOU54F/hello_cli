@@ -23,148 +23,148 @@ jobs:
         job:
           - { target: x86_64-apple-darwin, os: macos-14, use-cross: false }
           - { target: aarch64-apple-darwin, os: macos-14, use-cross: false }
+          - {
+              target: x86_64-unknown-linux-gnu,
+              os: ubuntu-latest,
+              use-cross: true
+            }
+          - {
+              target: x86_64-unknown-linux-musl,
+              os: ubuntu-latest,
+              use-cross: true
+            }
+          - {
+              target: aarch64-unknown-linux-gnu,
+              os: ubuntu-latest,
+              use-cross: true
+            }
+          - {
+              target: aarch64-unknown-linux-musl,
+              os: ubuntu-latest,
+              use-cross: true
+            }
+          - {
+              target: arm-unknown-linux-gnueabi,
+              os: ubuntu-latest,
+              use-cross: true
+            }
+          - {
+              target: arm-unknown-linux-gnueabihf,
+              os: ubuntu-latest,
+              use-cross: true
+            }
+          - {
+              target: arm-unknown-linux-musleabi,
+              os: ubuntu-latest,
+              use-cross: true
+            }
+          - {
+              target: arm-unknown-linux-musleabihf,
+              os: ubuntu-latest,
+              use-cross: true
+            }
+          - {
+              target: armv7-unknown-linux-gnueabi,
+              os: ubuntu-latest,
+              use-cross: true
+            }
+          - {
+              target: armv7-unknown-linux-gnueabihf,
+              os: ubuntu-latest,
+              use-cross: true
+            }
+          - {
+              target: armv7-unknown-linux-musleabi,
+              os: ubuntu-latest,
+              use-cross: true
+            }
+          - {
+              target: armv7-unknown-linux-musleabihf,
+              os: ubuntu-latest,
+              use-cross: true
+            }
+
+
+          # Fails to build when Ring is included
+          # https://github.com/briansmith/ring/issues/1303
           # - {
-          #     target: x86_64-unknown-linux-gnu,
-          #     os: ubuntu-latest,
-          #     use-cross: true
-          #   }
-          # - {
-          #     target: x86_64-unknown-linux-musl,
-          #     os: ubuntu-latest,
-          #     use-cross: true
-          #   }
-          # - {
-          #     target: aarch64-unknown-linux-gnu,
-          #     os: ubuntu-latest,
-          #     use-cross: true
-          #   }
-          # - {
-          #     target: aarch64-unknown-linux-musl,
-          #     os: ubuntu-latest,
-          #     use-cross: true
-          #   }
-          # - {
-          #     target: arm-unknown-linux-gnueabi,
-          #     os: ubuntu-latest,
-          #     use-cross: true
-          #   }
-          # - {
-          #     target: arm-unknown-linux-gnueabihf,
-          #     os: ubuntu-latest,
-          #     use-cross: true
-          #   }
-          # - {
-          #     target: arm-unknown-linux-musleabi,
-          #     os: ubuntu-latest,
-          #     use-cross: true
-          #   }
-          # - {
-          #     target: arm-unknown-linux-musleabihf,
-          #     os: ubuntu-latest,
-          #     use-cross: true
-          #   }
-          # - {
-          #     target: armv7-unknown-linux-gnueabi,
-          #     os: ubuntu-latest,
-          #     use-cross: true
-          #   }
-          # - {
-          #     target: armv7-unknown-linux-gnueabihf,
-          #     os: ubuntu-latest,
-          #     use-cross: true
-          #   }
-          # - {
-          #     target: armv7-unknown-linux-musleabi,
-          #     os: ubuntu-latest,
-          #     use-cross: true
-          #   }
-          # - {
-          #     target: armv7-unknown-linux-musleabihf,
+          #     target: i586-unknown-linux-gnu,
           #     os: ubuntu-latest,
           #     use-cross: true
           #   }
 
 
-          # # Fails to build when Ring is included
-          # # https://github.com/briansmith/ring/issues/1303
-          # # - {
-          # #     target: i586-unknown-linux-gnu,
-          # #     os: ubuntu-latest,
-          # #     use-cross: true
-          # #   }
+          - {
+              target: i686-unknown-linux-gnu,
+              os: ubuntu-latest,
+              use-cross: true
+            }
 
+          # awaiting pr's for bsd targets
+          # https://github.com/stanislav-tkach/os_info/issues/370
+          - {
+              target: x86_64-unknown-netbsd,
+              os: ubuntu-latest,
+              use-cross: true
+            }
+          - {
+              target: x86_64-unknown-freebsd,
+              os: ubuntu-latest,
+              use-cross: true
+            }
+          - {
+              target: aarch64-unknown-freebsd,
+              os: ubuntu-latest,
+              use-cross: true
+            }
 
-          # - {
-          #     target: i686-unknown-linux-gnu,
-          #     os: ubuntu-latest,
-          #     use-cross: true
-          #   }
-
-          # # awaiting pr's for bsd targets
-          # # https://github.com/stanislav-tkach/os_info/issues/370
-          # - {
-          #     target: x86_64-unknown-netbsd,
-          #     os: ubuntu-latest,
-          #     use-cross: true
-          #   }
-          # - {
-          #     target: x86_64-unknown-freebsd,
-          #     os: ubuntu-latest,
-          #     use-cross: true
-          #   }
-          # - {
-          #     target: aarch64-unknown-freebsd,
-          #     os: ubuntu-latest,
-          #     use-cross: true
-          #   }
-
-          # - {
-          #     target: armv5te-unknown-linux-gnueabi,
-          #     os: ubuntu-latest,
-          #     use-cross: true
-          #   }
-          # - {
-          #     target: armv5te-unknown-linux-musleabi,
-          #     os: ubuntu-latest,
-          #     use-cross: true
-          #   }
-          # - {
-          #     target: arm-linux-androideabi,
-          #     os: ubuntu-latest,
-          #     use-cross: true
-          #   }
-          # - {
-          #     target: armv7-linux-androideabi,
-          #     os: ubuntu-latest,
-          #     use-cross: true
-          #   }
-          # - {
-          #     target: aarch64-linux-android,
-          #     os: ubuntu-latest,
-          #     use-cross: true
-          #   }
-          # - { target: i686-linux-android, os: ubuntu-latest, use-cross: true }
-          # - { target: x86_64-linux-android, os: ubuntu-latest, use-cross: true }
-          # - {
-          #     target: thumbv7neon-linux-androideabi,
-          #     os: ubuntu-latest,
-          #     use-cross: true
-          #   }
-          # - {
-          #     target: thumbv7neon-unknown-linux-gnueabihf,
-          #     os: ubuntu-latest,
-          #     use-cross: true
-          #   }
-          # - {
-          #     target: x86_64-pc-windows-msvc,
-          #     os: windows-latest,
-          #     use-cross: false
-          #   }
-          # - {
-          #     target: aarch64-pc-windows-msvc,
-          #     os: windows-latest,
-          #     use-cross: false
-          #   }
+          - {
+              target: armv5te-unknown-linux-gnueabi,
+              os: ubuntu-latest,
+              use-cross: true
+            }
+          - {
+              target: armv5te-unknown-linux-musleabi,
+              os: ubuntu-latest,
+              use-cross: true
+            }
+          - {
+              target: arm-linux-androideabi,
+              os: ubuntu-latest,
+              use-cross: true
+            }
+          - {
+              target: armv7-linux-androideabi,
+              os: ubuntu-latest,
+              use-cross: true
+            }
+          - {
+              target: aarch64-linux-android,
+              os: ubuntu-latest,
+              use-cross: true
+            }
+          - { target: i686-linux-android, os: ubuntu-latest, use-cross: true }
+          - { target: x86_64-linux-android, os: ubuntu-latest, use-cross: true }
+          - {
+              target: thumbv7neon-linux-androideabi,
+              os: ubuntu-latest,
+              use-cross: true
+            }
+          - {
+              target: thumbv7neon-unknown-linux-gnueabihf,
+              os: ubuntu-latest,
+              use-cross: true
+            }
+          - {
+              target: x86_64-pc-windows-msvc,
+              os: windows-latest,
+              use-cross: false
+            }
+          - {
+              target: aarch64-pc-windows-msvc,
+              os: windows-latest,
+              use-cross: false
+            }
           - {
               target: i686-pc-windows-msvc,
               os: windows-latest,
@@ -204,7 +204,7 @@ jobs:
       - name: Build with cargo
         if: ${{ matrix.job.use-cross != true }}
         run: |
-          rustup toolchain install nightly ${{ matrix.job.target }};
+          rustup +nightly toolchain install ${{ matrix.job.target }};
           rustup component add rust-src --toolchain nightly --target=${{ matrix.job.target }};
           cargo +nightly install cross --git https://github.com/cross-rs/cross;
           RUSTFLAGS="-Zlocation-detail=none" cargo +nightly build -Z build-std=std,panic_abort,core,alloc,proc_macro -Z build-std-features=panic_immediate_abort --target=${{ matrix.job.target }} --release
@@ -240,23 +240,13 @@ jobs:
       - name: Create dist
         id: dist
         shell: bash
-        run: ./prep_dist.sh ${{ matrix.job.target }}
-      # - name: Create dist
-      #   id: dist
-      #   shell: bash
-      #   run: |
-      #     EXECUTABLE="target/${{ matrix.job.target }}/release/${{ env.BINARY_APP_NAME }}"
-      #     BINARY_NAME="${{ env.BINARY_APP_NAME }}_${{ matrix.job.target }}"
-      #     BINARY_NAME=${BINARY_NAME//-unknown-/-}
-      #     BINARY_NAME=${BINARY_NAME//-pc-/-}
-      #     BINARY_NAME=${BINARY_NAME//-apple-darwin/-macos}
-      #     BINARY_PATH="dist/${BINARY_NAME}"
-      #     mkdir -p "dist/"
-      #     # Binary
-      #     cp "${EXECUTABLE}" "${BINARY_PATH}"
-      #     echo "BINARY_NAME=${BINARY_NAME}" >> $GITHUB_OUTPUT
-      #     echo "BINARY_PATH=${BINARY_PATH}" >> $GITHUB_OUTPUT
-
+        run: |
+          ./prep_dist.sh ${{ matrix.job.target }}
+          BINARY_NAME="${{ env.BINARY_APP_NAME }}_${{ matrix.job.target }}"
+          BINARY_NAME=${BINARY_NAME//-unknown-/-}
+          BINARY_NAME=${BINARY_NAME//-pc-/-}
+          BINARY_NAME=${BINARY_NAME//-apple-darwin/-macos}
+          echo "BINARY_NAME=${BINARY_NAME}" >> $GITHUB_OUTPUT
       - uses: actions/upload-artifact@master
         with:
           name: ${{ steps.dist.outputs.BINARY_NAME }}
