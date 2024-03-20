@@ -7,6 +7,7 @@ generate_headers:
 	rustup run nightly cbindgen --config cbindgen.toml --crate pact_cli --output include/pact.h
 
 TARGET=
+BINARY_NAME?=pact_cli
 SLIM=false
 
 ifeq ($(TARGET),)
@@ -64,10 +65,10 @@ cargo_build_release:
 			mv target/aarch64-unknown-freebsd/release-aarch64-freebsd target/aarch64-unknown-freebsd/release; \
 		else \
 			if [[ $(TARGET) == "aarch64-unknown-linux-musl" ]] || [[ $(TARGET) == "armv5te-unknown-linux-musleabi" ]]; then \
-				RUSTFLAGS="-Zlocation-detail=none" cross +nightly build -Z build-std=std,panic_abort,core,alloc,proc_macro -Z build-std-features=panic_immediate_abort --target=$(TARGET) --bin ${{ env.BINARY_NAME }} --release; \
+				RUSTFLAGS="-Zlocation-detail=none" cross +nightly build -Z build-std=std,panic_abort,core,alloc,proc_macro -Z build-std-features=panic_immediate_abort --target=$(TARGET) --bin $(BINARY_NAME) --release; \
 				RUSTFLAGS="-Ctarget-feature=-crt-static -Zlocation-detail=none" cross +nightly build -Z build-std=std,panic_abort,core,alloc,proc_macro -Z build-std-features=panic_immediate_abort --target=$(TARGET) --lib --release; \
 			elif [[ $(TARGET) == *"musl"* ]]; then \
-				RUSTFLAGS="-Zlocation-detail=none" cross +nightly build -Z build-std=std,panic_abort,core,alloc,proc_macro -Z build-std-features=panic_immediate_abort --target=$(TARGET) --bin ${{ env.BINARY_NAME }} --release; \
+				RUSTFLAGS="-Zlocation-detail=none" cross +nightly build -Z build-std=std,panic_abort,core,alloc,proc_macro -Z build-std-features=panic_immediate_abort --target=$(TARGET) --bin $(BINARY_NAME) --release; \
 				RUSTFLAGS="-Ctarget-feature=-crt-static -Zlocation-detail=none" cross +nightly build -Z build-std=std,panic_abort,core,alloc,proc_macro -Z build-std-features=panic_immediate_abort --target=$(TARGET) --lib --release; \
 			else \
 				RUSTFLAGS="-Zlocation-detail=none" cross +nightly build -Z build-std=std,panic_abort,core,alloc,proc_macro -Z build-std-features=panic_immediate_abort --target=$(TARGET) --release; \
@@ -78,7 +79,7 @@ cargo_build_release:
 		cross +nightly build -Z build-std=std,core,alloc,proc_macro --profile release-aarch64-freebsd --target=$(TARGET); \
 		mv target/aarch64-unknown-freebsd/release-aarch64-freebsd target/aarch64-unknown-freebsd/release; \
 	elif [[ $(TARGET) == *"musl"* ]]; then \
-		RUSTFLAGS="-Zlocation-detail=none" cross build --release --target=$(TARGET) --bin ${{ env.BINARY_NAME }}; \
+		RUSTFLAGS="-Zlocation-detail=none" cross build --release --target=$(TARGET) --bin $(BINARY_NAME); \
 		RUSTFLAGS="-Ctarget-feature=-crt-static -Zlocation-detail=none" cross build --release --target=$(TARGET) --lib; \
 	else \
 		cross build --release --target=$(TARGET); \
