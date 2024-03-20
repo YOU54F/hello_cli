@@ -28,25 +28,25 @@ jobs:
     - name: Download
       if: matrix.os == 'ubuntu-latest'
       run: |
-        curl -LO https://github.com/YOU54F/hello_cli/releases/download/v0.0.5/pact_cli_x86_64-linux-musl
+        curl -LO https://github.com/YOU54F/hello_cli/releases/download/v0.0.6/pact_cli_x86_64-linux-musl
         chmod +x pact_cli_x86_64-linux-musl
         mv pact_cli_x86_64-linux-musl pact_cli
     - name: Download
       if: matrix.os == 'macos-12'
       run: |
-        curl -LO https://github.com/YOU54F/hello_cli/releases/download/v0.0.5/pact_cli_x86_64-apple-darwin
+        curl -LO https://github.com/YOU54F/hello_cli/releases/download/v0.0.6/pact_cli_x86_64-apple-darwin
         chmod +x pact_cli_x86_64-apple-darwin
         mv pact_cli_x86_64-apple-darwin pact_cli
     - name: Download
       if: matrix.os == 'macos-14'
       run: |
-        curl -LO https://github.com/YOU54F/hello_cli/releases/download/v0.0.5/pact_cli_aarch64-apple-darwin
+        curl -LO https://github.com/YOU54F/hello_cli/releases/download/v0.0.6/pact_cli_aarch64-apple-darwin
         chmod +x pact_cli_aarch64-apple-darwin
         mv pact_cli_aarch64-apple-darwin pact_cli
     - name: Download
       if: matrix.os == 'windows-latest'
       run: |
-        curl -LO https://github.com/YOU54F/hello_cli/releases/download/v0.0.5/pact_cli_x86_64-windows-msvc.exe
+        curl -LO https://github.com/YOU54F/hello_cli/releases/download/v0.0.6/pact_cli_x86_64-windows-msvc.exe
         chmod +x pact_cli_x86_64-windows-msvc.exe
         mv pact_cli_x86_64-windows-msvc.exe pact_cli.exe
     - name: Build
