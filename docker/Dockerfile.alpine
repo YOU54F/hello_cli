@@ -2,7 +2,7 @@ ARG ARCH=
 FROM alpine:3.19 as builder
 ARG TARGETARCH
 ARG TARGETVARIANT
-ARG VERSION=0.0.8
+ARG VERSION=0.0.9
 
 RUN if [ "$TARGETARCH" = "amd64" ]; then \
         BIN_ARCH="x86_64"; \

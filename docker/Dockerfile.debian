@@ -2,7 +2,7 @@ ARG ARCH=
 FROM debian:11-slim as builder
 ARG TARGETARCH
 ARG TARGETVARIANT
-ARG VERSION=0.0.8
+ARG VERSION=0.0.9
 
 RUN apt-get update && apt-get install -y wget
 RUN if [ "$TARGETARCH" = "amd64" ]; then \

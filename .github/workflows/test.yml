@@ -292,10 +292,10 @@ jobs:
       - name: Publish archives and packages
         uses: softprops/action-gh-release@master
         with:
-          tag_name: 'v0.0.8'
-          name: 'Release v0.0.8'
+          tag_name: 'v0.0.9'
+          name: 'Release v0.0.9'
           generate_release_notes: false
-          body: 'Release v0.0.8'
+          body: 'Release v0.0.9'
           files: dist/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

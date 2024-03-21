@@ -8,7 +8,7 @@ docker buildx build -t you54f/pact_cli:$DOCKER_TAG-alpine --build-arg VERSION=$D
 Run the image
 
 ```sh
-docker run --platform=linux/arm -p 8080:8080 --rm --init you54f/pact_cli:0.0.8-alpine mock start
+docker run --platform=linux/arm -p 8080:8080 --rm --init you54f/pact_cli:0.0.9-alpine mock start
 ```
 
 Docker multi arch available args
