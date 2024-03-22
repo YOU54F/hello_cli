@@ -45,8 +45,7 @@ cargo_build_release:
 			sudo apt install libstd-rust-dev; \
 		fi; \
 		cargo +nightly install cross --git https://github.com/cross-rs/cross; \
-	fi;
-	if [[ $(TARGET) == *"android"* ]] || [[ $(TARGET) == "x86_64-unknown-netbsd" ]] || [[ $(TARGET) == "x86_64-pc-windows-gnu" ]] || [[ $(TARGET) == "x86_64-unknown-freebsd" ]]; then \
+	elif [[ $(TARGET) == *"android"* ]] || [[ $(TARGET) == "x86_64-unknown-netbsd" ]] || [[ $(TARGET) == "x86_64-pc-windows-gnu" ]] || [[ $(TARGET) == "x86_64-unknown-freebsd" ]]; then \
 		echo "installing latest cross"; \
 		if [[ $(SLIM) == "true" ]]; then \
 			cargo +nightly install cross --git https://github.com/cross-rs/cross; \
