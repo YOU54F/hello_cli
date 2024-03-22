@@ -1,5 +1,6 @@
 ARG ARCH=
-FROM debian:11-slim as builder
+ARG BASE_IMAGE=debian:11-slim
+FROM ${BASE_IMAGE} as builder
 ARG TARGETARCH
 ARG TARGETVARIANT
 ARG VERSION=0.0.9
@@ -16,6 +17,9 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
         BIN_FILE=pact_cli-${BIN_ARCH}-linux-musl; \
     elif [ "$TARGETARCH" = "s390x" ]; then \
         BIN_ARCH="s390x"; \
+        BIN_FILE=pact_cli-${BIN_ARCH}-linux-gnu; \
+    elif [ "$TARGETARCH" = "riscv64" ]; then \
+        BIN_ARCH="riscv64gc"; \
         BIN_FILE=pact_cli-${BIN_ARCH}-linux-gnu; \
     elif [ "$TARGETARCH" = "arm" ]; then \
         echo ${TARGETVARIANT}; \
@@ -42,7 +46,7 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
     && wget -O pact_cli https://github.com/you54f/hello_cli/releases/download/v${VERSION}/${BIN_FILE} && \
     chmod +x pact_cli
 
-FROM --platform=linux/${TARGETARCH} debian:11-slim
+FROM --platform=linux/${TARGETARCH}${TARGETVARIANT:+/${TARGETVARIANT}} ${BASE_IMAGE}
 WORKDIR /app
 COPY --from=builder /pact_cli /app/
 EXPOSE 8080
