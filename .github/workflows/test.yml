@@ -216,7 +216,7 @@ jobs:
         with:
           target: ${{ matrix.job.target }}
           toolchain: stable
-        # if: ${{ matrix.job.target != 'aarch64-unknown-freebsd' }}
+        if: ${{ matrix.job.target != 'aarch64-unknown-freebsd' }}
       - name: Install Rust Toolchain Components
         uses: dtolnay/rust-toolchain@stable
         with:
