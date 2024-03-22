@@ -216,7 +216,7 @@ jobs:
         with:
           target: ${{ matrix.job.target }}
           toolchain: stable
-          if: ${{ matrix.job.target != 'aarch64-unknown-freebsd' && matrix.job.target != 'mips64-unknown-linux-gnuabi64' && matrix.job.target != 'mips64el-unknown-linux-gnuabi64' && matrix.job.target != 'mips64-unknown-linux-muslabi64' && matrix.job.target != 'mips64el-unknown-linux-muslabi64' }}
+        if: ${{ matrix.job.target != 'aarch64-unknown-freebsd' && matrix.job.target != 'mips64-unknown-linux-gnuabi64' && matrix.job.target != 'mips64el-unknown-linux-gnuabi64' && matrix.job.target != 'mips64-unknown-linux-muslabi64' && matrix.job.target != 'mips64el-unknown-linux-muslabi64' }}
       - name: Install Rust Toolchain Components
         uses: dtolnay/rust-toolchain@stable
         with:
