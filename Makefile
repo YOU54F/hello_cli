@@ -38,15 +38,21 @@ cargo_build_release:
 			rustup toolchain install nightly $(TARGET); \
 			rustup component add rust-src --toolchain nightly --target $(TARGET); \
 		fi; \
-		cargo +nightly install cross@0.2.5; \
-	elif [[ $(TARGET) == "aarch64-unknown-freebsd" ]]; then \
+		cargo +nightly install cross@0.2.5; 
+	fi
+	if [[ $(TARGET) == "aarch64-unknown-freebsd" ]]; then \
 		if [[ "$(shell uname -s)" == "Linux" ]]; then \
 			sudo apt install libstd-rust-dev; \
 		fi; \
 		cargo +nightly install cross --git https://github.com/cross-rs/cross; \
-	elif [[ $(TARGET) == *"android"* ]] || [[ $(TARGET) == "x86_64-unknown-netbsd" ]] || [[ $(TARGET) == "x86_64-pc-windows-gnu" ]] || [[ $(TARGET) == "x86_64-unknown-freebsd" ]]; then \
+	fi;
+	if [[ $(TARGET) == *"android"* ]] || [[ $(TARGET) == "x86_64-unknown-netbsd" ]] || [[ $(TARGET) == "x86_64-pc-windows-gnu" ]] || [[ $(TARGET) == "x86_64-unknown-freebsd" ]]; then \
 		echo "installing latest cross"; \
-		cargo install cross --git https://github.com/cross-rs/cross; \
+		if [[ $(SLIM) == "true" ]]; then \
+			cargo +nightly install cross --git https://github.com/cross-rs/cross; \
+		else \
+			cargo install cross --git https://github.com/cross-rs/cross; \
+		fi; \
 	else \
 		cargo install cross@0.2.5; \
 	fi
@@ -59,6 +65,8 @@ cargo_build_release:
 		else \
 			if [[ $(TARGET) == *"risc"* ]] || [[ $(TARGET) == *"mips"* ]]; then \
 				echo "building for risc and mip targets, refusing to build with nightly as unable to build-std"; \
+				rustup toolchain install $(TARGET); \
+				rustup component add rust-src --toolchain stable --target $(TARGET); \
 				cargo install cross@0.2.5; \
 				cross build --target=$(TARGET) --release; \
 			elif [[ $(TARGET) == "aarch64-unknown-linux-musl" ]] || [[ $(TARGET) == "armv5te-unknown-linux-musleabi" ]]; then \
