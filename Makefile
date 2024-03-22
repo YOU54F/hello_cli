@@ -38,7 +38,7 @@ cargo_build_release:
 			rustup toolchain install nightly $(TARGET); \
 			rustup component add rust-src --toolchain nightly --target $(TARGET); \
 		fi; \
-		cargo +nightly install cross@0.2.5; 
+		cargo +nightly install cross@0.2.5; \
 	fi
 	if [[ $(TARGET) == "aarch64-unknown-freebsd" ]]; then \
 		if [[ "$(shell uname -s)" == "Linux" ]]; then \
