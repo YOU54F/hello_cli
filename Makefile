@@ -62,11 +62,17 @@ cargo_build_release:
 			RUSTFLAGS="-Zlocation-detail=none" cross +nightly build -Z build-std=std,panic_abort,core,alloc,proc_macro --profile release-aarch64-freebsd --target=$(TARGET); \
 			mv target/aarch64-unknown-freebsd/release-aarch64-freebsd target/aarch64-unknown-freebsd/release; \
 		else \
-			if [[ $(TARGET) == *"risc"* ]] || [[ $(TARGET) == *"mips"* ]]; then \
-				echo "building for risc and mip targets, refusing to build with nightly as unable to build-std"; \
+			if [[ $(TARGET) == *"risc"* ]]; then \
+				echo "building for risc targets, refusing to build with nightly as unable to build-std"; \
 				rustup toolchain install $(TARGET); \
 				rustup component add rust-src --toolchain stable --target $(TARGET); \
 				cargo install cross@0.2.5; \
+				cross build --target=$(TARGET) --release; \
+			elif [[ $(TARGET) == *"mips"* ]]; then \
+				echo "building for mips targets, refusing to build with nightly as unable to build-std"; \
+				rustup toolchain install $(TARGET); \
+				rustup component add rust-src --toolchain stable --target $(TARGET); \
+				cargo install cross --git https://github.com/cross-rs/cross; \
 				cross build --target=$(TARGET) --release; \
 			elif [[ $(TARGET) == "aarch64-unknown-linux-musl" ]] || [[ $(TARGET) == "armv5te-unknown-linux-musleabi" ]]; then \
 				RUSTFLAGS="-Zlocation-detail=none -C link-arg=-lgcc" cross +nightly build -Z build-std=std,panic_abort,core,alloc,proc_macro -Z build-std-features=panic_immediate_abort --target=$(TARGET) --bin $(BINARY_NAME) --release; \
