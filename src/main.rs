@@ -1847,8 +1847,8 @@ pub fn main() {
                         };
 
                         // check if os/arch is supported
-                        // supported are osx, linux and arm64, x86_64
-                        if os != "osx" && os != "linux" {
+                        // supported are osx, linux, windows and arm64, x86_64
+                        if os != "osx" && os != "linux" && os != "windows" {
                             println!("⚠️  Unsupported OS: {}", os);
                             std::process::exit(1);
                         }
@@ -1861,17 +1861,31 @@ pub fn main() {
                         let home_dir = env::var("HOME").unwrap();
                         let pact_dir = format!("{}/.pact/traveling-broker", home_dir);
                         let _ = fs::create_dir_all(&pact_dir);
-                        let broker_archive_path = format!("{}/traveling-pact-20230803-3.2.2-{}-{}-full.tar.gz", pact_dir, os, arch);
-                        let app_path = format!("{}/pact-broker-app.sh", pact_dir);
+                        let broker_archive_path = if os == "windows" {
+                            format!("{}/packed-broker.zip", pact_dir)
+                        } else {
+                            format!("{}/traveling-pact-20230803-3.2.2-{}-{}-full.tar.gz", pact_dir, os, arch)
+                        };
+                        let app_path = if os == "windows" {
+                            format!("{}/packed-broker/pact-broker-app.bat", pact_dir)
+                        } else {
+                            format!("{}/pact-broker-app.sh", pact_dir)
+                        };
 
                         // check is app path exists, if so, do not download the file
 
                         if !fs::metadata(&app_path).is_ok() {
                             // Download the correct version of the traveling ruby binary
-                            let url = format!(
-                                "https://github.com/YOU54F/traveling-ruby/releases/download/rel-20230803-pact/traveling-pact-20230803-3.2.2-{}-{}-full.tar.gz",
-                                os, arch
-                            );
+                            let url = if os == "windows" {
+                                format!(
+                                    "https://github.com/YOU54F/test/releases/download/0.0.0/packed-broker.zip",
+                                )
+                            } else {
+                                format!(
+                                    "https://github.com/YOU54F/traveling-ruby/releases/download/rel-20230803-pact/traveling-pact-20230803-3.2.2-{}-{}-full.tar.gz",
+                                    os, arch
+                                )
+                            };
                             let response = reqwest::get(&url).await.unwrap();
                             let body = response.bytes().await.unwrap();
 
@@ -1879,13 +1893,33 @@ pub fn main() {
                             let _ = file.write_all(&body);
 
                             // Unpack the binary
-                            Command::new("tar")
-                                .arg("-xf")
-                                .arg(&broker_archive_path)
-                                .arg("-C")
-                                .arg(&pact_dir)
-                                .output()
-                                .expect("Failed to unpack the binary");
+                            if os == "windows" {
+                                if Command::new("unzip").output().is_ok() {
+                                    Command::new("unzip")
+                                        .arg(&broker_archive_path)
+                                        .arg("-d")
+                                        .arg(&pact_dir)
+                                        .output()
+                                        .expect("Failed to unpack the binary");
+                                } else {
+                                    Command::new("powershell")
+                                        .arg("-Command")
+                                        .arg(format!(
+                                            "Expand-Archive -Path '{}' -DestinationPath '{}'",
+                                            &broker_archive_path, &pact_dir
+                                        ))
+                                        .output()
+                                        .expect("Failed to unpack the binary");
+                                }
+                            } else {
+                                Command::new("tar")
+                                    .arg("-xf")
+                                    .arg(&broker_archive_path)
+                                    .arg("-C")
+                                    .arg(&pact_dir)
+                                    .output()
+                                    .expect("Failed to unpack the binary");
+                            }
                             let _ = fs::remove_file(broker_archive_path);
                     }
                         // Execute the pact-broker-app.sh file
