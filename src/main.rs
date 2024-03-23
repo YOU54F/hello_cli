@@ -1988,6 +1988,25 @@ pub fn main() {
                                 }
 
                                 let _ = child.kill();
+                                let pid_file = fs::File::open(&pid_file_path);
+                                match pid_file {
+                                    Ok(mut file) => {
+                                        let mut pid = String::new();
+                                        file.read_to_string(&mut pid).unwrap();
+                                        let pid = pid.trim().parse::<u32>().unwrap();
+                                        println!("🚀 Stopping Pact Broker with PID: {}", pid);
+                                        #[cfg(windows)]
+                                        Command::new("taskkill")
+                                            .arg("/F")
+                                            .arg("/PID")
+                                            .arg(pid.to_string())
+                                            .output()
+                                            .expect("Failed to stop the process");
+                                    }
+                                    Err(_) => {
+                                        println!("PID file not found");
+                                    }
+                                }
                                 let _ = fs::remove_file(&pid_file_path);
                                 std::process::exit(0);
                                 }
@@ -2007,6 +2026,15 @@ pub fn main() {
                                     file.read_to_string(&mut pid).unwrap();
                                     let pid = pid.trim().parse::<u32>().unwrap();
                                     println!("🚀 Stopping Pact Broker with PID: {}", pid);
+                                    #[cfg(windows)]
+                                    Command::new("taskkill")
+                                        .arg("/F")
+                                        .arg("/PID")
+                                        .arg(pid.to_string())
+                                        .output()
+                                        .expect("⚠️ Failed to stop the broker");
+
+                                    #[cfg(not(windows))]
                                     Command::new("kill")
                                         .arg(pid.to_string())
                                         .output()
