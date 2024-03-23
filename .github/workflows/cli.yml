@@ -85,6 +85,17 @@ jobs:
         ./pact_cli mock shutdown --help
         ./pact_cli mock shutdown-master --help
         ./pact_cli standalone --help
+    - name: install scoop
+      shell: powershell
+      if: runner.os == 'windows'
+      run: |
+        iex "& {$(irm get.scoop.sh)} -RunAsAdmin"
+        "$HOME\scoop\shims\" >> $env:GITHUB_PATH
+    - name: install wget and netcat via scoop
+      if: runner.os == 'windows'
+      run: |
+        scoop install wget
+        scoop install netcat
     - name: Run broker
       # if: matrix.os == 'windows-latest'
       shell: bash
