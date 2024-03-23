@@ -66,9 +66,9 @@ jobs:
       if: runner.os == 'windows'
       shell: powershell        
     - run: |
-      echo "PATH=${PATH}:${PWD}/pact/bin/" >>$GITHUB_ENV
-      if: runner.os == 'windows'
-      shell: powershell        
+        echo "PATH=${PATH}:${PWD}/pact/bin/" >>$GITHUB_ENV
+      if: runner.os != 'windows'
+      shell: bash        
   
     - name: Show help commands
       run: |
