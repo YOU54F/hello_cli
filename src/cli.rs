@@ -99,6 +99,8 @@ fn add_standalone_broker_subcommand() -> Command {
                 ),
         )
         .subcommand(Command::new("stop").about("Stop the Pact Broker"))
+        .subcommand(Command::new("remove").about("Remove the Pact Broker"))
+        .subcommand(Command::new("info").about("Info about the Pact Broker"))
 }
 
 fn add_plugin_cli_subcommand() -> Command {

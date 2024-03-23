@@ -12,7 +12,7 @@ use serde_json::Value;
 use std::env;
 use std::fs;
 use std::io::{Read, Write};
-use std::process::Command;
+use std::process::{Command, ExitStatus};
 use std::str::FromStr;
 mod pact_broker;
 mod pact_plugin_cli;
@@ -1835,48 +1835,53 @@ pub fn main() {
                     );
                 }
                 Some(("standalone", args)) => {
-                    let home_dir = env::var("HOME").unwrap();
-                    let traveling_pact_broker_dir = format!("{}/.pact/traveling-broker", home_dir);
-                    let pid_file_path =
-                        format!("{}/pact_broker-standalone.pid", traveling_pact_broker_dir);
+                    let traveling_pact_broker_home = home::home_dir()
+                    .map(|dir| dir.join(".pact/traveling-broker"))
+                    .unwrap_or_default().display().to_string();
+                    let traveling_pact_broker_pid_file_path =
+                        format!("{}/pact_broker-standalone.pid", traveling_pact_broker_home);
+                    let os = match env::consts::OS {
+                        "macos" => "osx",
+                        other => other,
+                    };
 
+                    let arch = match env::consts::ARCH {
+                        "aarch64" => "arm64",
+                        other => other,
+                    };
+
+                    // check if os/arch is supported
+                    // supported are osx, linux, windows and arm64, x86_64
+                    if os != "osx" && os != "linux" && os != "windows" {
+                        println!("⚠️  Unsupported OS: {}", os);
+                        std::process::exit(1);
+                    }
+                    if arch != "arm64" && arch != "x86_64" {
+                        println!("⚠️  Unsupported architecture: {}", arch);
+                        std::process::exit(1);
+                    }
+                    let traveling_pact_broker_app_path = if os == "windows" {
+                        format!("{}/packed-broker/pact-broker-app.bat", traveling_pact_broker_home)
+                    } else {
+                        format!("{}/pact-broker-app.sh", traveling_pact_broker_home)
+                    };
+                    let traveling_pact_broker_ruby_path = if os == "windows" {
+                        format!("{}/packed-broker/bin/ruby.exe", traveling_pact_broker_home)
+                    } else {
+                        format!("{}/bin/ruby", traveling_pact_broker_home)
+                    };
                     match args.subcommand() {
                         Some(("start", args)) => {
                             tokio::runtime::Runtime::new().unwrap().block_on(async {
-                            let os = match env::consts::OS {
-                                "macos" => "osx",
-                                other => other,
-                            };
-
-                            let arch = match env::consts::ARCH {
-                                "aarch64" => "arm64",
-                                other => other,
-                            };
-
-                            // check if os/arch is supported
-                            // supported are osx, linux, windows and arm64, x86_64
-                            if os != "osx" && os != "linux" && os != "windows" {
-                                println!("⚠️  Unsupported OS: {}", os);
-                                std::process::exit(1);
-                            }
-                            if arch != "arm64" && arch != "x86_64" {
-                                println!("⚠️  Unsupported architecture: {}", arch);
-                                std::process::exit(1);
-                            }
 
                             // Store the binary in the user's home .pact/traveling-broker directory
-                            if !fs::metadata(&traveling_pact_broker_dir).is_ok() {
-                                let _ = fs::create_dir_all(&traveling_pact_broker_dir);
+                            if !fs::metadata(&traveling_pact_broker_home).is_ok() {
+                                let _ = fs::create_dir_all(&traveling_pact_broker_home);
                             }
-                            let app_path = if os == "windows" {
-                                format!("{}/packed-broker/pact-broker-app.bat", traveling_pact_broker_dir)
-                            } else {
-                                format!("{}/pact-broker-app.sh", traveling_pact_broker_dir)
-                            };
 
                             // check is app path exists, if so, do not download the file
 
-                            if !fs::metadata(&app_path).is_ok() {
+                            if !fs::metadata(&traveling_pact_broker_app_path).is_ok() {
                                 // Download the correct version of the traveling ruby binary
                                 let mut os_variant: String = os.to_string();
                                 if os == "linux" && cfg!(target_env = "musl") {
@@ -1896,9 +1901,9 @@ pub fn main() {
                                     }
                                 }
                                 let broker_archive_path = if os == "windows" {
-                                    format!("{}/packed-broker.zip", traveling_pact_broker_dir)
+                                    format!("{}/packed-broker.zip", traveling_pact_broker_home)
                                 } else {
-                                    format!("{}/traveling-pact-20230803-3.2.2-{}-{}-full.tar.gz", traveling_pact_broker_dir, os_variant, arch)
+                                    format!("{}/traveling-pact-20230803-3.2.2-{}-{}-full.tar.gz", traveling_pact_broker_home, os_variant, arch)
                                 };
                                 let url = if os == "windows" {
                                     format!(
@@ -1917,63 +1922,73 @@ pub fn main() {
                                 let body = response.bytes().await.unwrap();
 
                                 let mut file = fs::File::create(&broker_archive_path).unwrap();
-                                let _ = file.write_all(&body);
+
+                                // Use tokio::task::spawn_blocking to wait for the file writing to complete
+                                tokio::task::spawn_blocking(move || {
+                                    let _ = file.write_all(&body).expect("Unable to write zip to file");
+                                }).await.unwrap();
 
                                 // Unpack the binary
                                 println!("🚀 Unpacking the binary...");
+                                let mut status: ExitStatus;
                                 if os == "windows" {
                                     if Command::new("unzip").output().is_ok() {
-                                        println!("Unpacking {} to {}, tool: {}", broker_archive_path, traveling_pact_broker_dir, "unzip");
-                                        Command::new("unzip")
+                                        println!("Unpacking {} to {}, tool: {}", broker_archive_path, traveling_pact_broker_home, "unzip");
+                                        status = Command::new("unzip")
                                             .arg(&broker_archive_path)
                                             .arg("-d")
-                                            .arg(&traveling_pact_broker_dir)
-                                            .output()
+                                            .arg(&traveling_pact_broker_home)
+                                            .status()
                                             .expect("Failed to unpack the binary");
                                     } else {
-                                        println!("Unpacking {} to {}, tool: {}", broker_archive_path, traveling_pact_broker_dir, "pwsh Expand-Archive");
-                                        Command::new("powershell")
+                                        println!("Unpacking {} to {}, tool: {}", broker_archive_path, traveling_pact_broker_home, "pwsh Expand-Archive");
+                                        status = Command::new("powershell")
                                             .arg("-Command")
                                             .arg(format!(
                                                 "Expand-Archive -Path '{}' -DestinationPath '{}'",
-                                                &broker_archive_path, &traveling_pact_broker_dir
+                                                &broker_archive_path, &traveling_pact_broker_home
                                             ))
-                                            .output()
+                                            .status()
                                             .expect("Failed to unpack the binary");
                                     }
                                 } else {
-                                    println!("Unpacking {} to {}, tool: {}", broker_archive_path, traveling_pact_broker_dir, "tar");
-                                    Command::new("tar")
+                                    println!("Unpacking {} to {}, tool: {}", broker_archive_path, traveling_pact_broker_home, "tar");
+                                    status = Command::new("tar")
                                         .arg("-xf")
                                         .arg(&broker_archive_path)
                                         .arg("-C")
-                                        .arg(&traveling_pact_broker_dir)
-                                        .output()
+                                        .arg(&traveling_pact_broker_home)
+                                        .status()
                                         .expect("Failed to unpack the binary");
                                 }
-                                println!("🚀 Removing the archive at {}", broker_archive_path);
-                                let _ = fs::remove_file(broker_archive_path);
+                                if !status.success() {
+                                    println!("⚠️  Failed to unpack the binary");
+                                    std::process::exit(1);
+                                } else {
+                                    println!("🚀 Removing the archive at {}", broker_archive_path);
+                                    let _ = fs::remove_file(broker_archive_path);
+                                }
                         } else {
-                            println!("🚀 Pact Broker binary already exists at {}", app_path);
+                            println!("🚀 Pact Broker binary already exists at {}", traveling_pact_broker_app_path);
                         }
                             // Execute the pact-broker-app.sh file
                             println!("🚀 Starting Pact Broker (this may take a few seconds)...");
-                            println!("🚀 Running: {}", app_path);
-                            let mut child_cmd = Command::new(&app_path);
+                            println!("🚀 Running: {}", traveling_pact_broker_app_path);
+                            let mut child_cmd = Command::new(&traveling_pact_broker_app_path);
 
                             if let Ok(mut child) = child_cmd
                             .arg("--pidfile")
-                            .arg(&pid_file_path).spawn() {
+                            .arg(&traveling_pact_broker_pid_file_path).spawn() {
                                 let pid = child.id();
-                                // let mut pid_file = fs::File::create(&pid_file_path).unwrap();
+                                // let mut pid_file = fs::File::create(&traveling_pact_broker_pid_file_path).unwrap();
                                 // let _ = pid_file.write_all(pid.to_string().as_bytes());
                                 println!("🚀 Pact Broker is running on http://localhost:9292");
                                 println!("🚀 PID: {}", pid);
-                                println!("🚀 PID file: {}", pid_file_path);
+                                println!("🚀 PID file: {}", traveling_pact_broker_pid_file_path);
                                 let mut pid_file_contents = String::from("unknown");
                                 while !pid_file_contents.chars().all(char::is_numeric) {
                                     std::thread::sleep(std::time::Duration::from_secs(1));
-                                    pid_file_contents = fs::read_to_string(&pid_file_path).unwrap_or_else(|_| String::from("unknown"));
+                                    pid_file_contents = fs::read_to_string(&traveling_pact_broker_pid_file_path).unwrap_or_else(|_| String::from("unknown"));
                                 }
                                 println!("Traveling Broker PID: {}", pid_file_contents);
 
@@ -1986,9 +2001,8 @@ pub fn main() {
                                 while child.try_wait().unwrap().is_none() {
                                     tokio::time::sleep(std::time::Duration::from_secs(1)).await;
                                 }
-
                                 let _ = child.kill();
-                                let pid_file = fs::File::open(&pid_file_path);
+                                let pid_file = fs::File::open(&traveling_pact_broker_pid_file_path);
                                 match pid_file {
                                     Ok(mut file) => {
                                         let mut pid = String::new();
@@ -2007,19 +2021,18 @@ pub fn main() {
                                         println!("PID file not found");
                                     }
                                 }
-                                let _ = fs::remove_file(&pid_file_path);
+                                let _ = fs::remove_file(&traveling_pact_broker_pid_file_path);
                                 std::process::exit(0);
                                 }
-
                             } else {
-                                println!("{} didn't start", app_path);
+                                println!("{} didn't start", traveling_pact_broker_app_path);
                                 std::process::exit(1);
                             }
                         });
                         }
                         Some(("stop", args)) => {
                             // Stop the broker
-                            let pid_file = fs::File::open(&pid_file_path);
+                            let pid_file = fs::File::open(&traveling_pact_broker_pid_file_path);
                             match pid_file {
                                 Ok(mut file) => {
                                     let mut pid = String::new();
@@ -2039,7 +2052,7 @@ pub fn main() {
                                         .arg(pid.to_string())
                                         .output()
                                         .expect("⚠️ Failed to stop the broker");
-                                    let _ = fs::remove_file(&pid_file_path);
+                                    let _ = fs::remove_file(&traveling_pact_broker_pid_file_path);
                                     println!("🛑 Pact Broker stopped");
                                     std::process::exit(0);
                                 }
@@ -2048,6 +2061,60 @@ pub fn main() {
                                     std::process::exit(1);
                                 }
                             }
+                        }
+                        Some(("remove", args)) => {
+                            if let Ok(metadata) = std::fs::metadata(traveling_pact_broker_home.clone()) {
+                                if metadata.is_dir() {
+                                    if let Err(err) = std::fs::remove_dir_all(traveling_pact_broker_home) {
+                                        println!("Failed to remove traveling_pact_broker_home: {}", err);
+                                    } else {
+                                        println!("traveling_pact_broker_home removed successfully");
+                                    }
+                                }
+                            } else {
+                                println!("traveling_pact_broker_home {} not found", traveling_pact_broker_home);
+                            }
+                        }
+                        Some(("info", args)) => {
+                            fn check_directory_exists(directory: &str) -> bool {
+                                std::path::Path::new(directory).exists()
+                            }
+
+                            let pact_broker_standalone_exists = check_directory_exists(&traveling_pact_broker_home);
+
+                            println!("Pact broker directory exists: {}", pact_broker_standalone_exists);
+                            
+
+                            fn get_traveling_ruby_version(app_path: &str) -> std::io::Result<String> {
+                                let output = Command::new(app_path)
+                                    .arg("-v")
+                                    .output()?;
+                                Ok(String::from_utf8_lossy(&output.stdout).to_string())
+                            }
+
+                            println!("Ruby version: {:?}", get_traveling_ruby_version(&traveling_pact_broker_ruby_path));
+
+
+                            fn check_pid_file_exists(pid_file_path: &str) -> bool {
+                                std::path::Path::new(pid_file_path).exists()
+                            }
+
+                            let pact_broker_pid_file_exists = check_pid_file_exists(&traveling_pact_broker_pid_file_path);
+                            println!("Pact broker pid exists: {}", pact_broker_pid_file_exists);
+
+                            fn get_pid_from_file(pid_file_path: &str) -> Option<u32> {
+                                if let Ok(mut file) = std::fs::File::open(pid_file_path) {
+                                    let mut pid = String::new();
+                                    file.read_to_string(&mut pid).unwrap();
+                                    Some(pid.trim().parse::<u32>().unwrap())
+                                } else {
+                                    None
+                                }
+                            }
+
+                            let pact_broker_pid_exists = get_pid_from_file(&traveling_pact_broker_pid_file_path);
+                            println!("Pact broker pid: {:?}", pact_broker_pid_exists);
+
                         }
                         _ => {
                             println!("⚠️  No option provided, try running standalone --help");
