@@ -7,7 +7,7 @@ on:
   push:
     branches:
       - main
-      # - test
+      - test
 
 env:
   BINARY_APP_NAME: pact_cli
