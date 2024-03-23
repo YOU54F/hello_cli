@@ -23,7 +23,7 @@ jobs:
       fail-fast: false
     defaults:
       run:
-        shell: bash
+        shell: ${{ matrix.shell }}
     steps:
     - uses: actions/checkout@v3
     - name: Download
@@ -97,11 +97,11 @@ jobs:
       run: |
         scoop install wget
         scoop install netcat
-    - name: start broker
+    - name: start standalone broker
       # if: runner.os == 'windows'
       run: ./pact_cli standalone start --detach
-      shell: ${{ matrix.shell }}
-    - name: Run broker
+      # shell: ${{ matrix.shell }}
+    - name: Run pact-broker commands
       # if: matrix.os == 'windows-latest'
       shell: bash
       run: |
