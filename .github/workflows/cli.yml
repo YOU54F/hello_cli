@@ -53,40 +53,40 @@ jobs:
   
     - name: Show help commands
       run: |
-        .\pact_cli --help
-        .\pact_cli pact-broker --help
-        .\pact_cli pactflow --help
-        .\pact_cli completions --help
-        .\pact_cli docker --help
-        .\pact_cli plugin --help
-        .\pact_cli plugin list --help
-        .\pact_cli plugin list installed --help
-        .\pact_cli plugin list known --help
-        .\pact_cli plugin env --help
-        .\pact_cli plugin install --help
-        .\pact_cli plugin remove --help
-        .\pact_cli plugin enable --help
-        .\pact_cli plugin disable --help
-        .\pact_cli plugin repository --help
-        .\pact_cli plugin repository validate --help
-        .\pact_cli plugin repository new --help
-        .\pact_cli plugin repository add-plugin-version --help
-        .\pact_cli plugin repository add-plugin-version git-hub --help
-        .\pact_cli plugin repository add-plugin-version file --help
-        .\pact_cli plugin repository add-all-plugin-versions --help
-        .\pact_cli plugin repository yank-version --help
-        .\pact_cli plugin repository list --help
-        .\pact_cli plugin repository list-versions --help
-        .\pact_cli stub --help
-        .\pact_cli verifier --help
-        .\pact_cli mock --help
-        .\pact_cli mock start --help
-        .\pact_cli mock list --help
-        .\pact_cli mock create --help
-        .\pact_cli mock verify --help
-        .\pact_cli mock shutdown --help
-        .\pact_cli mock shutdown-master --help
-        .\pact_cli standalone --help
+        .\\pact_cli --help
+        .\\pact_cli pact-broker --help
+        .\\pact_cli pactflow --help
+        .\\pact_cli completions --help
+        .\\pact_cli docker --help
+        .\\pact_cli plugin --help
+        .\\pact_cli plugin list --help
+        .\\pact_cli plugin list installed --help
+        .\\pact_cli plugin list known --help
+        .\\pact_cli plugin env --help
+        .\\pact_cli plugin install --help
+        .\\pact_cli plugin remove --help
+        .\\pact_cli plugin enable --help
+        .\\pact_cli plugin disable --help
+        .\\pact_cli plugin repository --help
+        .\\pact_cli plugin repository validate --help
+        .\\pact_cli plugin repository new --help
+        .\\pact_cli plugin repository add-plugin-version --help
+        .\\pact_cli plugin repository add-plugin-version git-hub --help
+        .\\pact_cli plugin repository add-plugin-version file --help
+        .\\pact_cli plugin repository add-all-plugin-versions --help
+        .\\pact_cli plugin repository yank-version --help
+        .\\pact_cli plugin repository list --help
+        .\\pact_cli plugin repository list-versions --help
+        .\\pact_cli stub --help
+        .\\pact_cli verifier --help
+        .\\pact_cli mock --help
+        .\\pact_cli mock start --help
+        .\\pact_cli mock list --help
+        .\\pact_cli mock create --help
+        .\\pact_cli mock verify --help
+        .\\pact_cli mock shutdown --help
+        .\\pact_cli mock shutdown-master --help
+        .\\pact_cli standalone --help
 
     - name: install scoop
       shell: powershell
@@ -101,7 +101,7 @@ jobs:
         scoop install netcat
 
     - name: start standalone broker
-      run: .\pact_cli standalone start --detach
+      run: .\\pact_cli standalone start --detach
 
     - name: wait for broker
       shell: bash
@@ -111,12 +111,12 @@ jobs:
 
     - name: Run pact-broker commands
       run: |
-        .\pact_cli standalone info
-        .\pact_cli pact-broker list-latest-pact-versions
-        .\pact_cli pact-broker create-environment --name name_foo1
-        .\pact_cli pact-broker create-environment --name name_foo2 --display-name display_name_foo
-        .\pact_cli pact-broker create-environment --name name_foo3 --display-name display_name_foo --contact-name contact_name_foo
-        .\pact_cli pact-broker create-environment --name name_foo4 --display-name display_name_foo --contact-name contact_name_foo --contact-email-address contact.email.address@foo.bar
-        .\pact_cli standalone stop
+        .\\pact_cli standalone info
+        .\\pact_cli pact-broker list-latest-pact-versions
+        .\\pact_cli pact-broker create-environment --name name_foo1
+        .\\pact_cli pact-broker create-environment --name name_foo2 --display-name display_name_foo
+        .\\pact_cli pact-broker create-environment --name name_foo3 --display-name display_name_foo --contact-name contact_name_foo
+        .\\pact_cli pact-broker create-environment --name name_foo4 --display-name display_name_foo --contact-name contact_name_foo --contact-email-address contact.email.address@foo.bar
+        .\\pact_cli standalone stop
       env:
         PACT_BROKER_URL: http://localhost:9292
