@@ -62,7 +62,7 @@ jobs:
         mv pact_cli-x86_64-windows-msvc.exe pact/bin/pact_cli.exe
 
     - run: |
-        "$pwd\bin\" >> $env:GITHUB_PATH
+        "$pwd\pact\bin\" >> $env:GITHUB_PATH
       if: runner.os == 'windows'
       shell: powershell        
     - run: |
