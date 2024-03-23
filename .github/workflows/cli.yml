@@ -100,8 +100,8 @@ jobs:
       # if: matrix.os == 'windows-latest'
       shell: bash
       run: |
-        ./pact_cli standalone >& nohup.out &
-        echo $! > pact_cli.pid
+        ./pact_cli standalone start --detach
+        echo $HOME/.pact/traveling-broker/act_broker-standalone.pid
         export WAIT_FOR_VERSION=4df3f9262d84cab0039c07bf861045fbb3c20ab7
         wget -qO- https://raw.githubusercontent.com/eficode/wait-for/$WAIT_FOR_VERSION/wait-for | sh -s -- http://0.0.0.0:9292/diagnostic/status/heartbeat -t 30 -- echo "Pact broker is up"
         export PACT_BROKER_BASE_URL=http://0.0.0.0:9292
@@ -119,7 +119,7 @@ jobs:
         ./pact_cli pact-broker list-environments
         ./pact_cli pact-broker delete-environment --uuid $UUID
         ./pact_cli pact-broker list-environments
-        kill $(cat pact_cli.pid)
+        ./pact_cli standalone stop
     # - name: Run broker
     #   if: matrix.os == 'windows-latest'
     #   run: |

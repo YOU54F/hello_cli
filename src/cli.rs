@@ -82,7 +82,23 @@ fn add_docker_broker_subcommand() -> Command {
         .subcommand(Command::new("remove").about("Remove the Pact Broker Docker container"))
 }
 fn add_standalone_broker_subcommand() -> Command {
-    Command::new("standalone").about("Install & Run the Pact Broker in $HOME/traveling-broker")
+    Command::new("standalone")
+        .about(
+            "Install & Run the Pact Broker with a bundled ruby runtime in $HOME/traveling-broker",
+        )
+        .subcommand(
+            Command::new("start")
+                .about("Download and Start the Pact Broker")
+                .arg(
+                    Arg::new("detach")
+                        .short('d')
+                        .long("detach")
+                        .num_args(0)
+                        .action(clap::ArgAction::SetTrue)
+                        .help("Run the Pact Broker in the background"),
+                ),
+        )
+        .subcommand(Command::new("stop").about("Stop the Pact Broker"))
 }
 
 fn add_plugin_cli_subcommand() -> Command {

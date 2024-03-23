@@ -11,7 +11,7 @@ use serde_json::json;
 use serde_json::Value;
 use std::env;
 use std::fs;
-use std::io::Write;
+use std::io::{Read, Write};
 use std::process::Command;
 use std::str::FromStr;
 mod pact_broker;
@@ -1835,106 +1835,184 @@ pub fn main() {
                     );
                 }
                 Some(("standalone", args)) => {
-                    tokio::runtime::Runtime::new().unwrap().block_on(async {
-                        let os = match env::consts::OS {
-                            "macos" => "osx",
-                            other => other,
-                        };
+                    let home_dir = env::var("HOME").unwrap();
+                    let pact_dir = format!("{}/.pact/traveling-broker", home_dir);
+                    let pid_file_path = format!("{}/pact_broker-standalone.pid", pact_dir);
 
-                        let arch = match env::consts::ARCH {
-                            "aarch64" => "arm64",
-                            other => other,
-                        };
-
-                        // check if os/arch is supported
-                        // supported are osx, linux, windows and arm64, x86_64
-                        if os != "osx" && os != "linux" && os != "windows" {
-                            println!("⚠️  Unsupported OS: {}", os);
-                            std::process::exit(1);
-                        }
-                        if arch != "arm64" && arch != "x86_64" {
-                            println!("⚠️  Unsupported architecture: {}", arch);
-                            std::process::exit(1);
-                        }
-
-                        // Store the binary in the user's home .pact/traveling-broker directory
-                        let home_dir = env::var("HOME").unwrap();
-                        let pact_dir = format!("{}/.pact/traveling-broker", home_dir);
-                        let _ = fs::create_dir_all(&pact_dir);
-                        let broker_archive_path = if os == "windows" {
-                            format!("{}/packed-broker.zip", pact_dir)
-                        } else {
-                            format!("{}/traveling-pact-20230803-3.2.2-{}-{}-full.tar.gz", pact_dir, os, arch)
-                        };
-                        let app_path = if os == "windows" {
-                            format!("{}/packed-broker/pact-broker-app.bat", pact_dir)
-                        } else {
-                            format!("{}/pact-broker-app.sh", pact_dir)
-                        };
-
-                        // check is app path exists, if so, do not download the file
-
-                        if !fs::metadata(&app_path).is_ok() {
-                            // Download the correct version of the traveling ruby binary
-                            let url = if os == "windows" {
-                                format!(
-                                    "https://github.com/YOU54F/test/releases/download/0.0.0/packed-broker.zip",
-                                )
-                            } else {
-                                format!(
-                                    "https://github.com/YOU54F/traveling-ruby/releases/download/rel-20230803-pact/traveling-pact-20230803-3.2.2-{}-{}-full.tar.gz",
-                                    os, arch
-                                )
+                    match args.subcommand() {
+                        Some(("start", args)) => {
+                            tokio::runtime::Runtime::new().unwrap().block_on(async {
+                            let mut os = match env::consts::OS {
+                                "macos" => "osx",
+                                other => other,
                             };
-                            let response = reqwest::get(&url).await.unwrap();
-                            let body = response.bytes().await.unwrap();
 
-                            let mut file = fs::File::create(&broker_archive_path).unwrap();
-                            let _ = file.write_all(&body);
+                            let arch = match env::consts::ARCH {
+                                "aarch64" => "arm64",
+                                other => other,
+                            };
 
-                            // Unpack the binary
-                            if os == "windows" {
-                                if Command::new("unzip").output().is_ok() {
-                                    Command::new("unzip")
+                            // check if os/arch is supported
+                            // supported are osx, linux, windows and arm64, x86_64
+                            if os != "osx" && os != "linux" && os != "windows" {
+                                println!("⚠️  Unsupported OS: {}", os);
+                                std::process::exit(1);
+                            }
+                            if arch != "arm64" && arch != "x86_64" {
+                                println!("⚠️  Unsupported architecture: {}", arch);
+                                std::process::exit(1);
+                            }
+
+                            // Store the binary in the user's home .pact/traveling-broker directory
+                            let _ = fs::create_dir_all(&pact_dir);
+                            let broker_archive_path = if os == "windows" {
+                                format!("{}/packed-broker.zip", pact_dir)
+                            } else {
+                                format!("{}/traveling-pact-20230803-3.2.2-{}-{}-full.tar.gz", pact_dir, os, arch)
+                            };
+                            let app_path = if os == "windows" {
+                                format!("{}/packed-broker/pact-broker-app.bat", pact_dir)
+                            } else {
+                                format!("{}/pact-broker-app.sh", pact_dir)
+                            };
+
+                            // check is app path exists, if so, do not download the file
+
+                            if !fs::metadata(&app_path).is_ok() {
+                                // Download the correct version of the traveling ruby binary
+                                let url = if os == "windows" {
+                                    format!(
+                                        "https://github.com/YOU54F/test/releases/download/0.0.0/packed-broker.zip",
+                                    )
+                                } else {
+                                    let mut os_variant: String = os.to_string();
+                                    if os == "linux" && cfg!(target_env = "musl") {
+                                        let output = Command::new("ldd")
+                                            .arg("/bin/sh")
+                                            .output()
+                                            .ok();
+
+                                        if let Some(output) = output {
+                                            let output_str = String::from_utf8_lossy(&output.stdout);
+                                            if output_str.contains("musl") {
+                                                println!("🚀 Detected musl libc, downloading musl version");
+                                                os_variant.push_str("-musl");
+                                            }
+                                        } else {
+                                            println!("⚠️  Failed to execute ldd command, downloading glibc version");
+                                        }
+                                    }
+                                    let download_url = format!(
+                                        "https://github.com/YOU54F/traveling-ruby/releases/download/rel-20230803-pact/traveling-pact-20230803-3.2.2-{}-{}-full.tar.gz",
+                                        os_variant, arch
+                                    );
+                                    download_url
+
+                                };
+                                println!("🚀 Downloading Pact Broker binary from {}", url);
+                                let response = reqwest::get(&url).await.unwrap();
+                                let body = response.bytes().await.unwrap();
+
+                                let mut file = fs::File::create(&broker_archive_path).unwrap();
+                                let _ = file.write_all(&body);
+
+                                // Unpack the binary
+                                println!("🚀 Unpacking the binary...");
+                                if os == "windows" {
+                                    if Command::new("unzip").output().is_ok() {
+                                        println!("Unpacking {} to {}, tool: {}", broker_archive_path, pact_dir, "unzip");
+                                        Command::new("unzip")
+                                            .arg(&broker_archive_path)
+                                            .arg("-d")
+                                            .arg(&pact_dir)
+                                            .output()
+                                            .expect("Failed to unpack the binary");
+                                    } else {
+                                        println!("Unpacking {} to {}, tool: {}", broker_archive_path, pact_dir, "pwsh Expand-Archive");
+                                        Command::new("powershell")
+                                            .arg("-Command")
+                                            .arg(format!(
+                                                "Expand-Archive -Path '{}' -DestinationPath '{}'",
+                                                &broker_archive_path, &pact_dir
+                                            ))
+                                            .output()
+                                            .expect("Failed to unpack the binary");
+                                    }
+                                } else {
+                                    println!("Unpacking {} to {}, tool: {}", broker_archive_path, pact_dir, "tar");
+                                    Command::new("tar")
+                                        .arg("-xf")
                                         .arg(&broker_archive_path)
-                                        .arg("-d")
+                                        .arg("-C")
                                         .arg(&pact_dir)
                                         .output()
                                         .expect("Failed to unpack the binary");
-                                } else {
-                                    Command::new("powershell")
-                                        .arg("-Command")
-                                        .arg(format!(
-                                            "Expand-Archive -Path '{}' -DestinationPath '{}'",
-                                            &broker_archive_path, &pact_dir
-                                        ))
-                                        .output()
-                                        .expect("Failed to unpack the binary");
                                 }
+                                println!("🚀 Removing the archive at {}", broker_archive_path);
+                                let _ = fs::remove_file(broker_archive_path);
+                        } else {
+                            println!("🚀 Pact Broker binary already exists at {}", app_path);
+                        }
+                            // Execute the pact-broker-app.sh file
+                            println!("🚀 Starting Pact Broker (this may take a few seconds)...");
+                            println!("🚀 Running: {}", app_path);
+                            let mut child_cmd = Command::new(&app_path);
+
+                            if let Ok(mut child) = child_cmd.spawn() {
+                                let pid = child.id();
+                                let mut pid_file = fs::File::create(&pid_file_path).unwrap();
+                                let _ = pid_file.write_all(pid.to_string().as_bytes());
+                                println!("🚀 Pact Broker is running on http://localhost:9292");
+                                println!("🚀 PID: {}", pid);
+
+                                // we should support a detach flag to run the broker in the background
+                                let detach = args.get_flag("detach");
+                                if detach {
+                                    println!("🚀 Running in the background");
+                                    std::process::exit(0);
+                                } else {
+                                // Await SIGKILL from the user
+                                let _ = tokio::signal::ctrl_c().await;
+
+                                // Send SIGKILL to the app
+                                let _ = child.kill();
+                                let _ = fs::remove_file(&pid_file_path);
+                                std::process::exit(0);
+                                }
+
                             } else {
-                                Command::new("tar")
-                                    .arg("-xf")
-                                    .arg(&broker_archive_path)
-                                    .arg("-C")
-                                    .arg(&pact_dir)
-                                    .output()
-                                    .expect("Failed to unpack the binary");
+                                println!("{} didn't start", app_path);
+                                std::process::exit(1);
                             }
-                            let _ = fs::remove_file(broker_archive_path);
+                        });
+                        }
+                        Some(("stop", args)) => {
+                            // Stop the broker
+                            let pid_file = fs::File::open(&pid_file_path);
+                            match pid_file {
+                                Ok(mut file) => {
+                                    let mut pid = String::new();
+                                    file.read_to_string(&mut pid).unwrap();
+                                    let pid = pid.trim().parse::<u32>().unwrap();
+                                    println!("🚀 Stopping Pact Broker with PID: {}", pid);
+                                    Command::new("kill")
+                                        .arg(pid.to_string())
+                                        .output()
+                                        .expect("⚠️ Failed to stop the broker");
+                                    let _ = fs::remove_file(&pid_file_path);
+                                    println!("🛑 Pact Broker stopped");
+                                    std::process::exit(0);
+                                }
+                                Err(_) => {
+                                    println!("⚠️ Pact Broker is not running");
+                                    std::process::exit(1);
+                                }
+                            }
+                        }
+                        _ => {
+                            println!("⚠️  No option provided, try running standalone --help");
+                        }
                     }
-                        // Execute the pact-broker-app.sh file
-
-                        let mut child = Command::new(&app_path).spawn().unwrap();
-
-                        // Await SIGKILL from the user
-                        let _ = tokio::signal::ctrl_c().await;
-
-                        // Send SIGKILL to the app
-                        let _ = child.kill();
-
-                        Ok::<(), ()>(());
-
-                    })
                 }
                 Some(("examples", args)) => {
                     let project_type = args.get_one::<String>("type").unwrap().as_str();
