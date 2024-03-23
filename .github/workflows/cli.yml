@@ -17,9 +17,8 @@ jobs:
 
     strategy:
       matrix:
-        os: [windows-latest]
-        # os: [ubuntu-latest, macos-12, macos-14, windows-latest]
-        shell: [bash]  # Include cmd and pwsh for all only windows-latest
+        os: [ubuntu-latest, macos-12, macos-14, windows-latest]
+        shell: [bash]
         include:
           - os: windows-latest
             shell: pwsh
@@ -139,4 +138,4 @@ jobs:
         pact_cli pact-broker create-environment --name name_foo4 --display-name display_name_foo --contact-name contact_name_foo --contact-email-address contact.email.address@foo.bar
         pact_cli standalone stop
       env:
-        PACT_BROKER_URL: http://localhost:9292
+        PACT_BROKER_BASE_URL: http://localhost:9292
