@@ -19,6 +19,7 @@ jobs:
       matrix:
         # os: [ubuntu-latest, macos-12, macos-14, windows-latest]
         os: [windows-latest]
+        shell: [pwsh,cmd,bash]
       fail-fast: false
     defaults:
       run:
@@ -99,6 +100,7 @@ jobs:
     - name: start broker
       # if: runner.os == 'windows'
       run: ./pact_cli standalone start --detach
+      shell: ${{ matrix.shell }}
     - name: Run broker
       # if: matrix.os == 'windows-latest'
       shell: bash
@@ -122,15 +124,4 @@ jobs:
         ./pact_cli pact-broker delete-environment --uuid $UUID
         ./pact_cli pact-broker list-environments
         ./pact_cli standalone stop
-    # - name: Run broker
-    #   if: matrix.os == 'windows-latest'
-    #   run: |
-    #     curl -LO https://github.com/YOU54F/pact-ruby-standalone/releases/download/v3.0.0/pact-broker-app.exe.gz
-    #     gunzip pact-broker-app.exe.gz
-    #     ls -l ./*
-    #     echo "RACK_ENV=production" >> $GITHUB_ENV
-    # - name: Run broker
-    #   if: matrix.os == 'windows-latest'
-    #   shell: cmd
-    #   run: |
-    #     pact-broker-app.exe
+
