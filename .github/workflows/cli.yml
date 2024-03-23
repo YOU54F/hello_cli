@@ -86,8 +86,8 @@ jobs:
         ./pact_cli mock shutdown-master --help
         ./pact_cli standalone --help
     - name: Run broker
-      if: matrix.os == 'windows-latest'
-      shell: bashs
+      # if: matrix.os == 'windows-latest'
+      shell: bash
       run: |
         ./pact_cli standalone & echo $! > pact_cli.pid
         export WAIT_FOR_VERSION=4df3f9262d84cab0039c07bf861045fbb3c20ab7
