@@ -96,14 +96,16 @@ jobs:
       run: |
         scoop install wget
         scoop install netcat
+    - name: start broker
+      # if: runner.os == 'windows'
+      run: ./pact_cli standalone start --detach
     - name: Run broker
       # if: matrix.os == 'windows-latest'
       shell: bash
       run: |
-        ./pact_cli standalone start --detach
-        cat $HOME/.pact/traveling-broker/pact_broker-standalone.pid
+        ./pact_cli standalone info
         export WAIT_FOR_VERSION=4df3f9262d84cab0039c07bf861045fbb3c20ab7
-        wget -qO- https://raw.githubusercontent.com/eficode/wait-for/$WAIT_FOR_VERSION/wait-for | sh -s -- http:/localhost:9292/diagnostic/status/heartbeat -t 30 -- echo "Pact broker is up"
+        wget -qO- https://raw.githubusercontent.com/eficode/wait-for/$WAIT_FOR_VERSION/wait-for | sh -s -- localhost:9292 -- echo "pact broker is up"
         export PACT_BROKER_BASE_URL=http://localhost:9292
         ./pact_cli pact-broker list-latest-pact-versions
         ./pact_cli pact-broker create-environment --name name_foo1
