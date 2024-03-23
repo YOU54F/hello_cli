@@ -1969,6 +1969,13 @@ pub fn main() {
                                 // let _ = pid_file.write_all(pid.to_string().as_bytes());
                                 println!("🚀 Pact Broker is running on http://localhost:9292");
                                 println!("🚀 PID: {}", pid);
+                                println!("🚀 PID file: {}", pid_file_path);
+                                let mut pid_file_contents = String::from("unknown");
+                                while !pid_file_contents.chars().all(char::is_numeric) {
+                                    std::thread::sleep(std::time::Duration::from_secs(1));
+                                    pid_file_contents = fs::read_to_string(&pid_file_path).unwrap_or_else(|_| String::from("unknown"));
+                                }
+                                println!("Traveling Broker PID: {}", pid_file_contents);
 
                                 // we should support a detach flag to run the broker in the background
                                 let detach = args.get_flag("detach");
@@ -1976,10 +1983,10 @@ pub fn main() {
                                     println!("🚀 Running in the background");
                                     std::process::exit(0);
                                 } else {
-                                // Await SIGKILL from the user
-                                let _ = tokio::signal::ctrl_c().await;
+                                while child.try_wait().unwrap().is_none() {
+                                    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+                                }
 
-                                // Send SIGKILL to the app
                                 let _ = child.kill();
                                 let _ = fs::remove_file(&pid_file_path);
                                 std::process::exit(0);
