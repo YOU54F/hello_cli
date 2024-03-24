@@ -1903,7 +1903,7 @@ pub fn main() {
                                 let broker_archive_path = if os == "windows" {
                                     format!("{}/packed-broker.zip", traveling_pact_broker_home)
                                 } else {
-                                    format!("{}/traveling-pact-20230803-3.2.2-{}-{}-full.tar.gz", traveling_pact_broker_home, os_variant, arch)
+                                    format!("{}/traveling-pact-20240317-3.2.3-{}-{}-full.tar.gz", traveling_pact_broker_home, os_variant, arch)
                                 };
                                 let url = if os == "windows" {
                                     format!(
@@ -1911,7 +1911,7 @@ pub fn main() {
                                     )
                                 } else {
                                     let download_url = format!(
-                                        "https://github.com/YOU54F/traveling-ruby/releases/download/rel-20230803-pact/traveling-pact-20230803-3.2.2-{}-{}-full.tar.gz",
+                                        "https://github.com/YOU54F/traveling-ruby/releases/download/rel-20240317-pact/traveling-pact-20240317-3.2.3-{}-{}-full.tar.gz",
                                         os_variant, arch
                                     );
                                     download_url
