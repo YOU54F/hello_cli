@@ -145,44 +145,47 @@ jobs:
 
     strategy:
       matrix:
+        distro: [alpine,debian]
+        registry: [docker.io,ghcr.io]
         platform: [
-          # linux/386,
-          linux/amd64,
-          # linux/arm/v6,
-          # linux/arm/v8,
-          # linux/arm/v7,
-          # linux/arm64,
-          # linux/riscv64,
-          # linux/s390x
-        ]
-       distro: [alpine,debian]
-       registry: [docker.io,ghcr.io]
+            # linux/386,
+            # linux/arm/v6,
+            # linux/arm/v8,
+            # linux/arm/v7,
+            # linux/arm64,
+            # linux/riscv64,
+            # linux/s390x
+            linux/amd64
+          ]
     steps:
-    - name: Download
-      run: |
-        curl -LO https://github.com/YOU54F/hello_cli/releases/download/v0.0.9/pact_cli-x86_64-linux-musl
-        chmod +x pact_cli-x86_64-linux-musl
-        mkdir -p pact/bin
-        mv pact_cli-x86_64-linux-musl pact/bin/pact_cli 
-        echo "PATH=${PATH}:${PWD}/pact/bin/" >>$GITHUB_ENV
+      - name: Download
+        run: |
+          curl -LO https://github.com/YOU54F/hello_cli/releases/download/v0.0.9/pact_cli-x86_64-linux-musl
+          chmod +x pact_cli-x86_64-linux-musl
+          mkdir -p pact/bin
+          mv pact_cli-x86_64-linux-musl pact/bin/pact_cli 
+          echo "PATH=${PATH}:${PWD}/pact/bin/" >>$GITHUB_ENV
 
-    - name: start standalone broker
-      run: pact_cli standalone start --detach
+      - name: start standalone broker
+        run: pact_cli standalone start --detach
 
-    - name: wait for broker
-      shell: bash
-      run: wget -qO- https://raw.githubusercontent.com/eficode/wait-for/$WAIT_FOR_VERSION/wait-for | sh -s -- localhost:9292 -- echo "pact broker is up"
-      env:
-        WAIT_FOR_VERSION: 4df3f9262d84cab0039c07bf861045fbb3c20ab7
+      - name: wait for broker
+        shell: bash
+        run: wget -qO- https://raw.githubusercontent.com/eficode/wait-for/$WAIT_FOR_VERSION/wait-for | sh -s -- localhost:9292 -- echo "pact broker is up"
+        env:
+          WAIT_FOR_VERSION: 4df3f9262d84cab0039c07bf861045fbb3c20ab7
 
-    - name: Run pact-broker commands
-      run: |
-        pact_cli standalone info
-        pact_cli pact-broker list-latest-pact-versions
-      env:
-        PACT_BROKER_BASE_URL: http://localhost:9292
-    - name: Run pact-broker commands
-      run: |
-        docker run --platform ${{ matrix.platform }} -e PACT_BROKER_BASE_URL=$PACT_BROKER_BASE_URL --rm ${{ matrix.registry }}:/you54f/pact_cli:latest-${{ matrix.distro }} pact_cli list-latest-pact-versions
-      env:
-        PACT_BROKER_BASE_URL: http://localhost:9292
+      - name: Run pact-broker commands
+        run: |
+          pact_cli standalone info
+          pact_cli pact-broker list-latest-pact-versions
+        env:
+          PACT_BROKER_BASE_URL: http://localhost:9292
+      - name: Set up QEMU
+        if: matrix.platform != 'linux/amd64'
+        uses: docker/setup-qemu-action@v3
+      - name: Run pact-broker commands
+        run: |
+          docker run --platform ${{ matrix.platform }} -e PACT_BROKER_BASE_URL=$PACT_BROKER_BASE_URL --rm ${{ matrix.registry }}:/you54f/pact_cli:latest-${{ matrix.distro }} pact_cli list-latest-pact-versions
+        env:
+          PACT_BROKER_BASE_URL: http://localhost:9292
