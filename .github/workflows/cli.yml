@@ -186,6 +186,6 @@ jobs:
         uses: docker/setup-qemu-action@v3
       - name: Run pact-broker commands
         run: |
-          docker run --platform ${{ matrix.platform }} -e PACT_BROKER_BASE_URL=$PACT_BROKER_BASE_URL --rm ${{ matrix.registry }}:/you54f/pact_cli:latest-${{ matrix.distro }} pact_cli list-latest-pact-versions
+          docker run --platform ${{ matrix.platform }} -e PACT_BROKER_BASE_URL=$PACT_BROKER_BASE_URL --rm ${{ matrix.registry }}/you54f/pact_cli:latest-${{ matrix.distro }} pact_cli list-latest-pact-versions
         env:
           PACT_BROKER_BASE_URL: http://localhost:9292
