@@ -188,4 +188,4 @@ jobs:
         run: |
           docker run --platform ${{ matrix.platform }} -e PACT_BROKER_BASE_URL=$PACT_BROKER_BASE_URL --rm ${{ matrix.registry }}/you54f/pact_cli:latest-${{ matrix.distro }} pact-broker list-latest-pact-versions
         env:
-          PACT_BROKER_BASE_URL: http://localhost:9292
+          PACT_BROKER_BASE_URL: http://host.docker.internal:9292
