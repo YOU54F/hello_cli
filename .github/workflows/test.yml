@@ -10,7 +10,7 @@ on:
       - test
 
 env:
-  SLIM: true
+  SLIM: false
 jobs:
   build:
     name: '🛠️ Build binaries'
@@ -262,10 +262,10 @@ jobs:
       - name: Publish archives and packages
         uses: softprops/action-gh-release@master
         with:
-          tag_name: 'v0.0.9'
-          name: 'Release v0.0.9'
+          tag_name: 'v0.0.10'
+          name: 'Release v0.0.10'
           generate_release_notes: false
-          body: 'Release v0.0.9'
+          body: 'Release v0.0.10'
           files: dist/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
