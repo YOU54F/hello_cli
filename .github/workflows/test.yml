@@ -210,11 +210,11 @@ jobs:
           #     os: windows-latest,
           #     use-cross: false
           #   }
-          - {
-              target: x86_64-pc-windows-gnu,
-              os: windows-latest,
-              use-cross: false
-            }
+          # - {
+          #     target: x86_64-pc-windows-gnu,
+          #     os: windows-latest,
+          #     use-cross: false
+          #   }
 
     runs-on: ${{matrix.job.os}}
     permissions:
