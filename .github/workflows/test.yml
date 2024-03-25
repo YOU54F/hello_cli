@@ -217,18 +217,18 @@ jobs:
           target: ${{ matrix.job.target }}
           toolchain: stable
         if: ${{ matrix.job.target != 'aarch64-unknown-freebsd' && matrix.job.target != 'mips64-unknown-linux-gnuabi64' && matrix.job.target != 'mips64el-unknown-linux-gnuabi64' && matrix.job.target != 'mips64-unknown-linux-muslabi64' && matrix.job.target != 'mips64el-unknown-linux-muslabi64' }}
-      - name: Install nightly Rust Toolchain Components
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.job.target }}
-          toolchain: nightly
-        if: ${{ matrix.job.use-cross != true }} && ${{ github.env.SLIM == true }}
-      - name: Install Rust Toolchain Components
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-unknown-linux-gnu
-          toolchain: nightly
-        if: ${{ matrix.job.target == 'aarch64-unknown-freebsd'}}
+      # - name: Install nightly Rust Toolchain Components
+      #   uses: dtolnay/rust-toolchain@stable
+      #   with:
+      #     targets: ${{ matrix.job.target }}
+      #     toolchain: nightly
+      #   if: ${{ matrix.job.use-cross != true }} && ${{ env.SLIM == true }}
+      # - name: Install Rust Toolchain Components
+      #   uses: dtolnay/rust-toolchain@stable
+      #   with:
+      #     targets: x86_64-unknown-linux-gnu
+      #     toolchain: nightly
+      #   if: ${{ matrix.job.target == 'aarch64-unknown-freebsd'}}
       - name: Rust caching
         uses: Swatinem/rust-cache@v2
       - name: set MACOSX_DEPLOYMENT_TARGET to 10.9 for x86_64-apple-darwin (mavericks)
@@ -239,7 +239,7 @@ jobs:
         run: echo "MACOSX_DEPLOYMENT_TARGET=11.0" >> $GITHUB_ENV
       - name: Build with cross
         # if: ${{ matrix.job.use-cross == true }}
-        run: make cargo_build_release TARGET=${{ matrix.job.target }} SLIM=${{ github.env.SLIM }}
+        run: make cargo_build_release TARGET=${{ matrix.job.target }} SLIM=${{ env.SLIM }}
       - name: Create dist
         id: dist
         shell: bash
