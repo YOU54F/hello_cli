@@ -46,7 +46,9 @@ cargo_build_release:
 		else \
 			rustup component add rust-src --toolchain nightly --target=$(TARGET); \
 		fi; \
-		cargo +nightly install cross@0.2.5; \
+		if [[ $(BUILDER) == "cross" ]]; then \
+			cargo +nightly install cross@0.2.5; \
+		fi
 	fi
 	if [[ $(TARGET) == "aarch64-unknown-freebsd" ]]; then \
 		if [[ "$(shell uname -s)" == "Linux" ]]; then \
@@ -61,7 +63,9 @@ cargo_build_release:
 			cargo install cross --git https://github.com/cross-rs/cross; \
 		fi; \
 	else \
-		cargo install cross@0.2.5; \
+		if [[ $(BUILDER) == "cross" ]]; then \
+			cargo install cross@0.2.5; \
+		fi; \
 	fi
 	if [[ $(SLIM) == "true" ]]; then \
 		echo "building slimmest binaries"; \
