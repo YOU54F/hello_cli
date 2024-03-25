@@ -48,7 +48,7 @@ cargo_build_release:
 		fi; \
 		if [[ $(BUILDER) == "cross" ]]; then \
 			cargo +nightly install cross@0.2.5; \
-		fi
+		fi; \
 	fi
 	if [[ $(TARGET) == "aarch64-unknown-freebsd" ]]; then \
 		if [[ "$(shell uname -s)" == "Linux" ]]; then \

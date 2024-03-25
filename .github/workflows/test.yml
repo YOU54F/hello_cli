@@ -238,7 +238,7 @@ jobs:
         with:
           targets: x86_64-unknown-linux-gnu
           toolchain: nightly
-        if: ${{ matrix.job.target == 'aarch64-unknown-freebsd' }}
+        if: ${{ matrix.job.target == 'aarch64-unknown-freebsd' || matrix.job.target == 's390x-unknown-linux-musl' && matrix.job.target || 'riscv64gc-unknown-linux-musl'}}
       - name: Rust caching
         uses: Swatinem/rust-cache@v2
       - name: set MACOSX_DEPLOYMENT_TARGET to 10.9 for x86_64-apple-darwin (mavericks)
