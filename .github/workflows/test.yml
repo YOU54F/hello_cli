@@ -211,26 +211,26 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v3
-      - name: Install Rust Toolchain Components
+      - name: Install stable Rust Toolchain Components
         uses: dtolnay/rust-toolchain@stable
         with:
           target: ${{ matrix.job.target }}
           toolchain: stable
         if: ${{ matrix.job.target != 'aarch64-unknown-freebsd' && matrix.job.target != 'mips64-unknown-linux-gnuabi64' && matrix.job.target != 'mips64el-unknown-linux-gnuabi64' && matrix.job.target != 'mips64-unknown-linux-muslabi64' && matrix.job.target != 'mips64el-unknown-linux-muslabi64' }}
-      - name: Install Rust Toolchain Components
+      - name: Install nightly Rust Toolchain Components
         uses: dtolnay/rust-toolchain@stable
         with:
-          target: ${{ matrix.job.target }}
+          targets: ${{ matrix.job.target }}
           toolchain: nightly
         if: ${{ matrix.job.use-cross != true }} && ${{ github.env.SLIM == 'true'}}
       - name: Install Rust Toolchain Components
         uses: dtolnay/rust-toolchain@stable
         with:
-          target: x86_64-unknown-linux-gnu
+          targets: x86_64-unknown-linux-gnu
           toolchain: nightly
         if: ${{ matrix.job.target == 'aarch64-unknown-freebsd'}}
-      # - name: Rust caching
-      #   uses: Swatinem/rust-cache@v2
+      - name: Rust caching
+        uses: Swatinem/rust-cache@v2
       - name: set MACOSX_DEPLOYMENT_TARGET to 10.9 for x86_64-apple-darwin (mavericks)
         if: ${{ matrix.job.target == 'x86_64-apple-darwin' }}
         run: echo "MACOSX_DEPLOYMENT_TARGET=10.9" >> $GITHUB_ENV
