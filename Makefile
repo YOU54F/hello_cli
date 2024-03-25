@@ -74,17 +74,17 @@ cargo_build_release:
 			RUSTFLAGS="-Zlocation-detail=none" $(BUILDER) +nightly build -Z build-std=std,panic_abort,core,alloc,proc_macro --profile release-aarch64-freebsd --target=$(TARGET); \
 			mv target/aarch64-unknown-freebsd/release-aarch64-freebsd target/aarch64-unknown-freebsd/release; \
 		else \
-			if [[ $(TARGET) == *"risc"* ]] && [[$(TARGET) != *"musl"* ]]; then \
+			if [[ $(TARGET) == *"risc"* ]] && [[ $(TARGET) != *"musl"* ]]; then \
 				echo "building for risc targets, refusing to build with nightly as unable to build-std"; \
 				rustup toolchain install $(TARGET); \
 				rustup component add rust-src --toolchain stable --target $(TARGET); \
 				cargo install cross@0.2.5; \
 				$(BUILDER) build --target=$(TARGET) --release; \
-			elif [[ $(TARGET) == *"risc"* ]] && [[$(TARGET) == *"musl"* ]]; then \
+			elif [[ $(TARGET) == *"risc"* ]] && [[ $(TARGET) == *"musl"* ]]; then \
 				echo "building for risc targets, build with nightly for build-std"; \
 				RUSTFLAGS="-Zlocation-detail=none" $(BUILDER) +nightly build -Z build-std=std,panic_abort,core,alloc,proc_macro -Z build-std-features=panic_immediate_abort --target=$(TARGET) --bin $(BINARY_NAME) --release; \
 				RUSTFLAGS="-Ctarget-feature=-crt-static -Zlocation-detail=none" $(BUILDER) +nightly build -Z build-std=std,panic_abort,core,alloc,proc_macro -Z build-std-features=panic_immediate_abort --target=$(TARGET) --lib --release; \
-			elif [[ $(TARGET) == *"s390x"* ]] && [[$(TARGET) == *"musl"* ]]; then \
+			elif [[ $(TARGET) == *"s390x"* ]] && [[ $(TARGET) == *"musl"* ]]; then \
 				echo "building for s390x musl targets, build with nightly for build-std"; \
 				RUSTFLAGS="-Zlocation-detail=none" $(BUILDER) +nightly build -Z build-std=std,panic_abort,core,alloc,proc_macro -Z build-std-features=panic_immediate_abort --target=$(TARGET) --bin $(BINARY_NAME) --release; \
 				RUSTFLAGS="-Ctarget-feature=-crt-static -Zlocation-detail=none" $(BUILDER) +nightly build -Z build-std=std,panic_abort,core,alloc,proc_macro -Z build-std-features=panic_immediate_abort --target=$(TARGET) --lib --release; \
