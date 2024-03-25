@@ -157,6 +157,11 @@ jobs:
             linux/s390x,
             linux/amd64
           ]
+        exclude:
+          - distro: alpine
+            platform: linux/riscv64
+          - distro: alpine
+            platform: linux/s390x
       fail-fast: false
     steps:
       - name: Download
