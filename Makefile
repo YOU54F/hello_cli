@@ -35,8 +35,7 @@ cargo_build_release:
 			rustup toolchain install nightly; \
 			rustup component add rust-src --toolchain nightly; \
 		else \
-			rustup toolchain install nightly-$(TARGET); \
-			rustup component add rust-src --toolchain nightly-$(TARGET); \
+			rustup component add rust-src --toolchain nightly --target=$(TARGET); \
 		fi; \
 		cargo +nightly install cross@0.2.5; \
 	fi
