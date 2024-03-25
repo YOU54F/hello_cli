@@ -11,133 +11,133 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  # cli:
+  cli:
 
-  #   runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
 
-  #   strategy:
-  #     matrix:
-  #       os: [ubuntu-latest, macos-12, macos-14, windows-latest]
-  #       shell: [bash]
-  #       include:
-  #         - os: windows-latest
-  #           shell: pwsh
-  #         - os: windows-latest
-  #           shell: cmd
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-12, macos-14, windows-latest]
+        shell: [bash]
+        include:
+          - os: windows-latest
+            shell: pwsh
+          - os: windows-latest
+            shell: cmd
 
-  #   steps:
-  #   - name: Download
-  #     if: matrix.os == 'ubuntu-latest'
-  #     shell: bash
-  #     run: |
-  #       curl -LO https://github.com/YOU54F/hello_cli/releases/download/v0.0.9/pact_cli-x86_64-linux-musl
-  #       chmod +x pact_cli-x86_64-linux-musl
-  #       mkdir -p pact/bin
-  #       mv pact_cli-x86_64-linux-musl pact/bin/pact_cli
-  #   - name: Download
-  #     if: matrix.os == 'macos-12'
-  #     shell: bash
-  #     run: |
-  #       curl -LO https://github.com/YOU54F/hello_cli/releases/download/v0.0.9/pact_cli-x86_64-macos
-  #       chmod +x pact_cli-x86_64-macos
-  #       mkdir -p pact/bin
-  #       mv pact_cli-x86_64-macos pact/bin/pact_cli
-  #   - name: Download
-  #     if: matrix.os == 'macos-14'
-  #     shell: bash
-  #     run: |
-  #       curl -LO https://github.com/YOU54F/hello_cli/releases/download/v0.0.9/pact_cli-aarch64-macos
-  #       chmod +x pact_cli-aarch64-macos
-  #       mkdir -p pact/bin
-  #       mv pact_cli-aarch64-macos pact/bin/pact_cli
-  #   - name: Download
-  #     if: matrix.os == 'windows-latest'
-  #     shell: bash
-  #     run: |
-  #       curl -LO https://github.com/YOU54F/hello_cli/releases/download/v0.0.9/pact_cli-x86_64-windows-msvc.exe
-  #       chmod +x pact_cli-x86_64-windows-msvc.exe
-  #       mkdir -p pact/bin
-  #       mv pact_cli-x86_64-windows-msvc.exe pact/bin/pact_cli.exe
+    steps:
+    - name: Download
+      if: matrix.os == 'ubuntu-latest'
+      shell: bash
+      run: |
+        curl -LO https://github.com/YOU54F/hello_cli/releases/download/v0.0.9/pact_cli-x86_64-linux-musl
+        chmod +x pact_cli-x86_64-linux-musl
+        mkdir -p pact/bin
+        mv pact_cli-x86_64-linux-musl pact/bin/pact_cli
+    - name: Download
+      if: matrix.os == 'macos-12'
+      shell: bash
+      run: |
+        curl -LO https://github.com/YOU54F/hello_cli/releases/download/v0.0.9/pact_cli-x86_64-macos
+        chmod +x pact_cli-x86_64-macos
+        mkdir -p pact/bin
+        mv pact_cli-x86_64-macos pact/bin/pact_cli
+    - name: Download
+      if: matrix.os == 'macos-14'
+      shell: bash
+      run: |
+        curl -LO https://github.com/YOU54F/hello_cli/releases/download/v0.0.9/pact_cli-aarch64-macos
+        chmod +x pact_cli-aarch64-macos
+        mkdir -p pact/bin
+        mv pact_cli-aarch64-macos pact/bin/pact_cli
+    - name: Download
+      if: matrix.os == 'windows-latest'
+      shell: bash
+      run: |
+        curl -LO https://github.com/YOU54F/hello_cli/releases/download/v0.0.9/pact_cli-x86_64-windows-msvc.exe
+        chmod +x pact_cli-x86_64-windows-msvc.exe
+        mkdir -p pact/bin
+        mv pact_cli-x86_64-windows-msvc.exe pact/bin/pact_cli.exe
 
-  #   - run: |
-  #       "$pwd\pact\bin\" >> $env:GITHUB_PATH
-  #     if: runner.os == 'windows'
-  #     shell: powershell        
-  #   - run: |
-  #       echo "PATH=${PATH}:${PWD}/pact/bin/" >>$GITHUB_ENV
-  #     if: runner.os != 'windows'
-  #     shell: bash        
+    - run: |
+        "$pwd\pact\bin\" >> $env:GITHUB_PATH
+      if: runner.os == 'windows'
+      shell: powershell        
+    - run: |
+        echo "PATH=${PATH}:${PWD}/pact/bin/" >>$GITHUB_ENV
+      if: runner.os != 'windows'
+      shell: bash        
   
-  #   - name: Show help commands
-  #     run: |
-  #       pact_cli --help
-  #       pact_cli pact-broker --help
-  #       pact_cli pactflow --help
-  #       pact_cli completions --help
-  #       pact_cli docker --help
-  #       pact_cli plugin --help
-  #       pact_cli plugin list --help
-  #       pact_cli plugin list installed --help
-  #       pact_cli plugin list known --help
-  #       pact_cli plugin env --help
-  #       pact_cli plugin install --help
-  #       pact_cli plugin remove --help
-  #       pact_cli plugin enable --help
-  #       pact_cli plugin disable --help
-  #       pact_cli plugin repository --help
-  #       pact_cli plugin repository validate --help
-  #       pact_cli plugin repository new --help
-  #       pact_cli plugin repository add-plugin-version --help
-  #       pact_cli plugin repository add-plugin-version git-hub --help
-  #       pact_cli plugin repository add-plugin-version file --help
-  #       pact_cli plugin repository add-all-plugin-versions --help
-  #       pact_cli plugin repository yank-version --help
-  #       pact_cli plugin repository list --help
-  #       pact_cli plugin repository list-versions --help
-  #       pact_cli stub --help
-  #       pact_cli verifier --help
-  #       pact_cli mock --help
-  #       pact_cli mock start --help
-  #       pact_cli mock list --help
-  #       pact_cli mock create --help
-  #       pact_cli mock verify --help
-  #       pact_cli mock shutdown --help
-  #       pact_cli mock shutdown-master --help
-  #       pact_cli standalone --help
+    - name: Show help commands
+      run: |
+        pact_cli --help
+        pact_cli pact-broker --help
+        pact_cli pactflow --help
+        pact_cli completions --help
+        pact_cli docker --help
+        pact_cli plugin --help
+        pact_cli plugin list --help
+        pact_cli plugin list installed --help
+        pact_cli plugin list known --help
+        pact_cli plugin env --help
+        pact_cli plugin install --help
+        pact_cli plugin remove --help
+        pact_cli plugin enable --help
+        pact_cli plugin disable --help
+        pact_cli plugin repository --help
+        pact_cli plugin repository validate --help
+        pact_cli plugin repository new --help
+        pact_cli plugin repository add-plugin-version --help
+        pact_cli plugin repository add-plugin-version git-hub --help
+        pact_cli plugin repository add-plugin-version file --help
+        pact_cli plugin repository add-all-plugin-versions --help
+        pact_cli plugin repository yank-version --help
+        pact_cli plugin repository list --help
+        pact_cli plugin repository list-versions --help
+        pact_cli stub --help
+        pact_cli verifier --help
+        pact_cli mock --help
+        pact_cli mock start --help
+        pact_cli mock list --help
+        pact_cli mock create --help
+        pact_cli mock verify --help
+        pact_cli mock shutdown --help
+        pact_cli mock shutdown-master --help
+        pact_cli standalone --help
 
-  #   - name: install scoop
-  #     shell: powershell
-  #     if: runner.os == 'windows'
-  #     run: |
-  #       iex "& {$(irm get.scoop.sh)} -RunAsAdmin"
-  #       "$HOME\scoop\shims\" >> $env:GITHUB_PATH
-  #   - name: install wget and netcat via scoop
-  #     if: runner.os == 'windows'
-  #     shell: powershell
-  #     run: |
-  #       scoop install wget
-  #       scoop install netcat
+    - name: install scoop
+      shell: powershell
+      if: runner.os == 'windows'
+      run: |
+        iex "& {$(irm get.scoop.sh)} -RunAsAdmin"
+        "$HOME\scoop\shims\" >> $env:GITHUB_PATH
+    - name: install wget and netcat via scoop
+      if: runner.os == 'windows'
+      shell: powershell
+      run: |
+        scoop install wget
+        scoop install netcat
 
-  #   - name: start standalone broker
-  #     run: pact_cli standalone start --detach
+    - name: start standalone broker
+      run: pact_cli standalone start --detach
 
-  #   - name: wait for broker
-  #     shell: bash
-  #     run: wget -qO- https://raw.githubusercontent.com/eficode/wait-for/$WAIT_FOR_VERSION/wait-for | sh -s -- localhost:9292 -- echo "pact broker is up"
-  #     env:
-  #       WAIT_FOR_VERSION: 4df3f9262d84cab0039c07bf861045fbb3c20ab7
+    - name: wait for broker
+      shell: bash
+      run: wget -qO- https://raw.githubusercontent.com/eficode/wait-for/$WAIT_FOR_VERSION/wait-for | sh -s -- localhost:9292 -- echo "pact broker is up"
+      env:
+        WAIT_FOR_VERSION: 4df3f9262d84cab0039c07bf861045fbb3c20ab7
 
-  #   - name: Run pact-broker commands
-  #     run: |
-  #       pact_cli standalone info
-  #       pact_cli pact-broker list-latest-pact-versions
-  #       pact_cli pact-broker create-environment --name name_foo1
-  #       pact_cli pact-broker create-environment --name name_foo2 --display-name display_name_foo
-  #       pact_cli pact-broker create-environment --name name_foo3 --display-name display_name_foo --contact-name contact_name_foo
-  #       pact_cli pact-broker create-environment --name name_foo4 --display-name display_name_foo --contact-name contact_name_foo --contact-email-address contact.email.address@foo.bar
-  #       pact_cli standalone stop
-  #     env:
-  #       PACT_BROKER_BASE_URL: http://localhost:9292
+    - name: Run pact-broker commands
+      run: |
+        pact_cli standalone info
+        pact_cli pact-broker list-latest-pact-versions
+        pact_cli pact-broker create-environment --name name_foo1
+        pact_cli pact-broker create-environment --name name_foo2 --display-name display_name_foo
+        pact_cli pact-broker create-environment --name name_foo3 --display-name display_name_foo --contact-name contact_name_foo
+        pact_cli pact-broker create-environment --name name_foo4 --display-name display_name_foo --contact-name contact_name_foo --contact-email-address contact.email.address@foo.bar
+        pact_cli standalone stop
+      env:
+        PACT_BROKER_BASE_URL: http://localhost:9292
 
   cli_docker:
 
@@ -148,13 +148,13 @@ jobs:
         distro: [alpine,debian]
         registry: [docker.io,ghcr.io]
         platform: [
-            # linux/386,
-            # linux/arm/v6,
-            # linux/arm/v8,
-            # linux/arm/v7,
-            # linux/arm64,
-            # linux/riscv64,
-            # linux/s390x
+            linux/386,
+            linux/arm/v6,
+            linux/arm/v8,
+            linux/arm/v7,
+            linux/arm64,
+            linux/riscv64,
+            linux/s390x
             linux/amd64
           ]
     steps:
