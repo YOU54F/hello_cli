@@ -222,7 +222,7 @@ jobs:
         with:
           targets: ${{ matrix.job.target }}
           toolchain: nightly
-        if: ${{ matrix.job.use-cross != true }} && ${{ github.env.SLIM == 'true'}}
+        if: ${{ matrix.job.use-cross != true }} && ${{ github.env.SLIM == true }}
       - name: Install Rust Toolchain Components
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -237,22 +237,9 @@ jobs:
       - name: set MACOSX_DEPLOYMENT_TARGET to 11.0 for aarch64-apple-darwin (big sur)
         if: ${{ matrix.job.target == 'aarch64-apple-darwin' }}
         run: echo "MACOSX_DEPLOYMENT_TARGET=11.0" >> $GITHUB_ENV
-      - name: Build with cargo
-        if: ${{ matrix.job.use-cross == true }} && ${{ github.env.SLIM != 'true'}}
-        run: make cargo_build_release TARGET=${{ matrix.job.target }}
-      - name: Build with cargo 
-        if: ${{ matrix.job.use-cross != true }} && ${{ github.env.SLIM != 'true'}}
-        run: |
-          cargo build --target=${{ matrix.job.target }} --release
-      - name: Build with cargo (slim)
-        if: ${{ matrix.job.use-cross == true }} && ${{ github.env.SLIM == 'true'}}
-        run: make cargo_build_release TARGET=${{ matrix.job.target }} SLIM=true
-      - name: Build with cargo (slim)
-        if: ${{ matrix.job.use-cross != true }} && ${{ github.env.SLIM == 'true'}}
-        run: |
-          rustup component add rust-src --toolchain nightly --target=${{ matrix.job.target }};
-          cargo +nightly install cross --git https://github.com/cross-rs/cross;
-          RUSTFLAGS="-Zlocation-detail=none" cargo +nightly build -Z build-std=std,panic_abort,core,alloc,proc_macro -Z build-std-features=panic_immediate_abort --target=${{ matrix.job.target }} --release
+      - name: Build with cross
+        # if: ${{ matrix.job.use-cross == true }}
+        run: make cargo_build_release TARGET=${{ matrix.job.target }} SLIM=${{ github.env.SLIM }}
       - name: Create dist
         id: dist
         shell: bash
